@@ -158,6 +158,15 @@
     @apply font-sans antialiased bg-background text-foreground;
     font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03"; 
   }
+
+  html {
+    scroll-behavior: smooth;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
   
   h1, h2, h3, h4, h5, h6 {
     @apply tracking-tight;
@@ -194,5 +203,161 @@
 
   .text-gradient {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Dark "Aurora Glass" design system — shared by Landing / HowItWorks / Pricing
+   Palette: slate-950 base · indigo 500 → violet 500 → cyan 400 accents
+--------------------------------------------------------------------------- */
+
+@property --angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes spin-angle {
+  to {
+    --angle: 360deg;
+  }
+}
+
+@keyframes float-y {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@layer utilities {
+  /* Dark frosted glass surfaces */
+  .glass-dark {
+    @apply backdrop-blur-xl border border-white/10 bg-slate-900/60;
+  }
+
+  .glass-dark-card {
+    @apply backdrop-blur-xl border border-white/10 bg-slate-900/50 shadow-2xl shadow-black/40 transition-all duration-300;
+  }
+
+  /* Gradient text tuned for dark backgrounds */
+  .text-gradient-dark {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-indigo-300 via-violet-300 to-cyan-300;
+  }
+
+  /* Subtle blueprint grid for dark sections (fades out via radial mask) */
+  .bg-grid-dark {
+    background-image:
+      linear-gradient(to right, rgb(148 163 184 / 0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(148 163 184 / 0.06) 1px, transparent 1px);
+    background-size: 56px 56px;
+    -webkit-mask-image: radial-gradient(ellipse 100% 80% at 50% 0%, black 30%, transparent 75%);
+    mask-image: radial-gradient(ellipse 100% 80% at 50% 0%, black 30%, transparent 75%);
+  }
+
+  /* Sweeping conic-gradient border (mask trick keeps border crisp).
+     Falls back to a static gradient border where @property is unsupported. */
+  .glow-ring {
+    position: relative;
+  }
+
+  .glow-ring::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: conic-gradient(
+      from var(--angle),
+      transparent 0deg,
+      transparent 300deg,
+      #22d3ee 322deg,
+      #818cf8 342deg,
+      #a78bfa 352deg,
+      transparent 360deg
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    -webkit-animation: spin-angle 4.5s linear infinite;
+    animation: spin-angle 4.5s linear infinite;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Faint inner radial glare used on tilt cards */
+  .tilt-glare {
+    background: radial-gradient(
+      circle at var(--gx, 50%) var(--gy, 50%),
+      rgb(255 255 255 / 0.12) 0%,
+      transparent 55%
+    );
+  }
+
+  /* Pointer-driven 3D tilt (vars written imperatively by the component) */
+  .tilt {
+    transform: perspective(1100px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg))
+      scale(var(--s, 1));
+    transition:
+      transform 160ms ease-out,
+      border-color 300ms,
+      box-shadow 300ms;
+    will-change: transform;
+  }
+
+  /* Dark premium range sliders (plan finder) */
+  .range-dark {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 9999px;
+    background: rgb(255 255 255 / 0.08);
+    outline: none;
+  }
+
+  .range-dark::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 9999px;
+    background: linear-gradient(135deg, #6366f1, #a855f7);
+    border: 2px solid #0f172a;
+    box-shadow: 0 0 12px rgb(99 102 241 / 0.6);
+    cursor: pointer;
+    transition: transform 120ms ease-out;
+  }
+
+  .range-dark::-webkit-slider-thumb:hover {
+    transform: scale(1.12);
+  }
+
+  .range-dark:active::-webkit-slider-thumb {
+    transform: scale(0.95);
+  }
+
+  .range-dark:focus-visible::-webkit-slider-thumb {
+    outline: 2px solid #818cf8;
+    outline-offset: 2px;
+  }
+
+  .range-dark::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 9999px;
+    background: linear-gradient(135deg, #6366f1, #a855f7);
+    border: 2px solid #0f172a;
+    box-shadow: 0 0 12px rgb(99 102 241 / 0.6);
+    cursor: pointer;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .glow-ring::after {
+      animation: none;
+    }
   }
 }
