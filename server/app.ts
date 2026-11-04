@@ -56,6 +56,12 @@ export function createApp(): express.Express {
   app.use(cookieParser());
   app.use(requestContext);
 
+  // Liveness probe for container orchestrators / Docker HEALTHCHECKs
+  // (no auth, no DB round-trip — pure process report).
+  app.get("/api/health", (_req, res) => {
+    res.json({ status: "ok", uptime: Math.floor(process.uptime()) });
+  });
+
   // Module routers (paths preserved from the legacy routes.ts)
   app.use("/api", authRouter);
   app.use("/api", reposRouter);

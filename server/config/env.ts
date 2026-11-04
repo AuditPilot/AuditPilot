@@ -19,6 +19,16 @@ const hexRange = (min: number) =>
       `must be at least ${min} hex characters`,
     );
 
+/**
+ * Treat an explicitly-empty env value ("VAR=") the same as unset —
+ * compose / `docker run -e VAR=` / shell exports commonly inject empty
+ * strings for unconfigured optional providers, and empty strings should
+ * de-activate a feature rather than fail validation.
+ */
+const emptyAsUndefined = (value: unknown) => (value === "" ? undefined : value);
+const pre = <T extends z.ZodType>(schema: T) =>
+  z.preprocess(emptyAsUndefined, schema);
+
 const envSchema = z.object({
   NODE_ENV: z
     .enum(["development", "test", "production"])
@@ -33,44 +43,42 @@ const envSchema = z.object({
     .min(1)
     .default("mongodb://localhost:27017/auditpilot"),
 
-  JWT_SECRET: z.string().min(1).optional(),
+  JWT_SECRET: pre(z.string().min(1).optional()),
 
   // 32-byte key for AES-256-GCM token encryption (added in the security step)
-  ENCRYPTION_KEY: hexRange(32).optional(),
+  ENCRYPTION_KEY: pre(hexRange(32).optional()),
 
   // GitHub OAuth App (legacy mode)
-  GITHUB_CLIENT_ID: z.string().min(1).optional(),
-  GITHUB_CLIENT_SECRET: z.string().min(1).optional(),
-  GITHUB_REDIRECT_URI: z.string().url().optional(),
+  GITHUB_CLIENT_ID: pre(z.string().min(1).optional()),
+  GITHUB_CLIENT_SECRET: pre(z.string().min(1).optional()),
+  GITHUB_REDIRECT_URI: pre(z.string().url().optional()),
 
   // GitHub App (new mode)
-  GITHUB_APP_ID: z.string().min(1).optional(),
-  GITHUB_APP_PRIVATE_KEY_BASE64: z.string().optional(),
-  GITHUB_APP_NAME: z.string().optional(),
-  GITHUB_WEBHOOK_SECRET: z.string().min(1).optional(),
+  GITHUB_APP_ID: pre(z.string().min(1).optional()),
+  GITHUB_APP_PRIVATE_KEY_BASE64: pre(z.string().optional()),
+  GITHUB_APP_NAME: pre(z.string().optional()),
+  GITHUB_WEBHOOK_SECRET: pre(z.string().min(1).optional()),
 
   GITHUB_AUTH_MODE: z.enum(["oauth", "app"]).default("oauth"),
 
   // Stripe
-  STRIPE_SECRET_KEY: z.string().min(1).optional(),
-  STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
-  STRIPE_PRO_PRICE_ID: z.string().min(1).optional(),
-  STRIPE_AGENCY_PRICE_ID: z.string().min(1).optional(),
+  STRIPE_SECRET_KEY: pre(z.string().min(1).optional()),
+  STRIPE_WEBHOOK_SECRET: pre(z.string().min(1).optional()),
+  STRIPE_PRO_PRICE_ID: pre(z.string().min(1).optional()),
+  STRIPE_AGENCY_PRICE_ID: pre(z.string().min(1).optional()),
 
   // AI (OpenAI-compatible endpoint, OpenRouter by default)
-  AI_INTEGRATIONS_OPENAI_API_KEY: z.string().min(1).optional(),
-  AI_INTEGRATIONS_OPENAI_BASE_URL: z
-    .string()
-    .url()
-    .default("https://openrouter.ai/api/v1"),
-  AI_MODEL_TRIAGE: z.string().min(1).optional(),
-  AI_MODEL_DEEP: z.string().min(1).optional(),
+  AI_INTEGRATIONS_OPENAI_API_KEY: pre(z.string().min(1).optional()),
+  AI_INTEGRATIONS_OPENAI_BASE_URL: pre(
+    z.string().url().default("https://openrouter.ai/api/v1"),
+  ),
+  AI_MODEL_TRIAGE: pre(z.string().min(1).optional()),
+  AI_MODEL_DEEP: pre(z.string().min(1).optional()),
 
   // Comma-separated CORS allowlist for browser clients
-  CLIENT_ORIGIN: z
-    .string()
-    .min(1)
-    .default("http://localhost:5000,http://localhost:5173"),
+  CLIENT_ORIGIN: pre(
+    z.string().min(1).default("http://localhost:5000,http://localhost:5173"),
+  ),
 
   // Cookie SameSite policy for the auth cookies. "lax" (default) fits
   // same-site deployments (SPA and API share a parent domain, or are
@@ -81,7 +89,14 @@ const envSchema = z.object({
     .enum(["lax", "none", "strict"])
     .default("lax"),
 
-  APP_URL: z.string().url().optional(),
+  APP_URL: pre(z.string().url().optional()),
+
+  // Set to "0"/"false" on API-only deployments where the static SPA is
+  // served elsewhere (nginx / CDN — see Dockerfile.server).
+  SERVE_STATIC: z
+    .string()
+    .optional()
+    .transform(v => v !== "0" && v !== "false"),
 
   WORKER_ONLY: z
     .string()

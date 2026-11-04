@@ -1,0 +1,54 @@
+# AuditPilot client — nginx config template.
+# The official nginx image runs envsubst over /etc/nginx/templates/*.template
+# at startup; only DEFINED environment variables are substituted, so native
+# nginx variables ($host, $uri, …) are untouched.
+#
+#   API_UPSTREAM — host:port of the backend service (default "api:8080").
+#
+# The /api/ proxy keeps the browser on one origin (cookies stay SameSite=Lax).
+# For a fully split deployment (frontend site != API origin) bake
+# VITE_API_BASE=https://api... into the image at build time instead and this
+# proxy simply goes unused.
+
+server {
+  listen 80;
+  server_name _;
+
+  root /usr/share/nginx/html;
+  index index.html;
+
+  add_header X-Content-Type-Options nosniff always;
+  add_header X-Frame-Options SAMEORIGIN always;
+  add_header Referrer-Policy strict-origin-when-cross-origin always;
+
+  gzip on;
+  gzip_comp_level 6;
+  gzip_min_length 1024;
+  gzip_types text/css application/javascript application/json image/svg+xml;
+
+  # OAuth/webhook traffic proxied to the API — preserve the original Host so
+  # the server can derive OAuth redirect URIs from it.
+  location /api/ {
+    proxy_pass http://${API_UPSTREAM};
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+
+  # Vite emits content-hashed assets — cache them hard.
+  location /assets/ {
+    expires 1y;
+    try_files $uri =404;
+  }
+
+  # SPA entry must never be cached, so new deploys resolve immediately.
+  location = /index.html {
+    add_header Cache-Control "no-cache";
+  }
+
+  location / {
+    try_files $uri $uri/ /index.html;
+  }
+}

@@ -13,12 +13,12 @@ const allowlist = [
   "zod-validation-error",
 ];
 
-async function buildAll() {
-  await rm("dist", { recursive: true, force: true });
-
+async function buildClient() {
   console.log("building client...");
   await viteBuild();
+}
 
+async function buildServer() {
   console.log("building server...");
   const pkg = JSON.parse(await readFile("package.json", "utf-8"));
   const allDeps = [
@@ -42,7 +42,36 @@ async function buildAll() {
   });
 }
 
-buildAll().catch((err) => {
+/**
+ * `build.ts` builds client + server fresh.
+ * `build.ts client` / `build.ts server` rebuilds just one artifact — used by
+ * the split Dockerfiles (Dockerfile.server / Dockerfile.client) so each
+ * image only builds what it deploys.
+ */
+type Segment = "client" | "server";
+
+async function buildAll(segment?: Segment) {
+  if (!segment) {
+    await rm("dist", { recursive: true, force: true });
+    await buildClient();
+    await buildServer();
+    return;
+  }
+
+  if (segment === "client") {
+    await rm("dist/public", { recursive: true, force: true });
+    await buildClient();
+    return;
+  }
+
+  await rm("dist/index.cjs", { force: true });
+  await buildServer();
+}
+
+const arg = process.argv[2];
+const segment = arg === "client" || arg === "server" ? (arg as Segment) : undefined;
+
+buildAll(segment).catch((err) => {
   console.error(err);
   process.exit(1);
 });

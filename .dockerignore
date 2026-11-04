@@ -1,14 +1,31 @@
-# Keep the build context small and secrets out of the image
+# Keep Docker build contexts small and secret-free.
+# Build only depends on: package.json, package-lock.json, script/, vite.config.ts,
+# vite-plugin-meta-images.ts, client/, shared/, server/, docker/nginx/.
+
+# dependencies & build output
 node_modules
+**/node_modules
 dist
+**/dist
+
+# version control & editor
 .git
 .gitignore
+.vscode
+.idea
+
+# secrets — never bake these into images
 .env
 .env.*
 !.env.example
-*.out.txt
-*_out.txt
-.probe*
+
+# local scratch
+temp
+temp/
+*.log
 .DS_Store
 Thumbs.db
-netlify.toml
+
+# docker files themselves (they are read by the engine, not the build)
+Dockerfile*
+docker-compose*.yml

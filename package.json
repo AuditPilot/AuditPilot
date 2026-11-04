@@ -7,6 +7,8 @@
     "dev:client": "npx vite dev --port 5000",
     "dev": "cross-env NODE_ENV=development npx tsx server/index.ts",
     "build": "npx tsx script/build.ts",
+    "build:client": "npx tsx script/build.ts client",
+    "build:server": "npx tsx script/build.ts server",
     "start": "cross-env NODE_ENV=production node dist/index.cjs",
     "check": "npx tsc",
     "test": "vitest run --passWithNoTests",

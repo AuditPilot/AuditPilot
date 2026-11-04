@@ -1,31 +1,74 @@
-# Local full-stack deployment:
-#   docker compose up -d        (app + local mongodb)
-# Secrets are passed through from your shell / .env (never baked in):
-#   JWT_SECRET / ENCRYPTION_KEY / AI_INTEGRATIONS_OPENAI_API_KEY required.
+# AuditPilot — split deployment: nginx-served SPA (web) + API (server) + MongoDB.
+#
+#   docker compose up -d   ->   web http://localhost:4173   api http://localhost:8080
+#
+# Each unit builds/pushes on its own for independent deployment:
+#   docker build -f Dockerfile.server -t auditpilot-api .
+#   docker build -f Dockerfile.client --build-arg VITE_API_BASE=https://api.example.com -t auditpilot-web .
+#
+# Fully split origins (app.example.com -> api.example.com): set
+#   VITE_API_BASE=<api origin> (baked into the web image at build time)
+#   CLIENT_ORIGIN=<app origin>, COOKIE_SAMESITE=none on the API, and serve both over HTTPS.
+# Secrets pass through from your shell / .env — never baked into images.
+
 services:
-  app:
-    build: .
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+      args:
+        # Empty => same-origin (nginx proxies /api below).
+        VITE_API_BASE: ${VITE_API_BASE:-}
+    image: auditpilot-web:latest
     ports:
-      - "5000:5000"
+      # host 4173 — :3000 is often taken by other dev tooling
+      - "4173:80"
+    environment:
+      # host:port nginx proxies /api to (docker service name works)
+      - API_UPSTREAM=${API_UPSTREAM:-server:8080}
+    # Comment out when deploying the web tier alone
+    depends_on:
+      server:
+        condition: service_started
+    restart: unless-stopped
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    image: auditpilot-api:latest
+    ports:
+      - "8080:8080"
     environment:
       - NODE_ENV=production
-      - PORT=5000
-      - MONGODB_URI=mongodb://mongo:27017/auditpilot
-      # Secrets (REQUIRED — the app refuses to boot without them in production)
+      - PORT=8080
+      # Client unit is an nginx container — this is API-only
+      - SERVE_STATIC=0
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongo:27017/auditpilot}
+      # Secrets — REQUIRED (production boots fail without them)
       - JWT_SECRET=${JWT_SECRET:?set JWT_SECRET (32+ hex chars)}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY:?set ENCRYPTION_KEY (64 hex chars)}
       - AI_INTEGRATIONS_OPENAI_API_KEY=${AI_INTEGRATIONS_OPENAI_API_KEY:-}
       - AI_INTEGRATIONS_OPENAI_BASE_URL=${AI_INTEGRATIONS_OPENAI_BASE_URL:-https://openrouter.ai/api/v1}
       - AI_MODEL_TRIAGE=${AI_MODEL_TRIAGE:-}
       - AI_MODEL_DEEP=${AI_MODEL_DEEP:-}
-      # CORS allowlist + cookie policy (comma-separated browser origins)
-      - CLIENT_ORIGIN=${CLIENT_ORIGIN:-http://localhost:5000}
+      # Browser origins allowed to call the API with credentials (comma-separated)
+      - CLIENT_ORIGIN=${CLIENT_ORIGIN:-http://localhost:4173,http://localhost:5173}
+      # Same-site proxied deploy -> "lax"; true split origins (api.x != app.x) -> "none"
       - COOKIE_SAMESITE=${COOKIE_SAMESITE:-lax}
+      - APP_URL=${APP_URL:-}
       # GitHub OAuth (optional until configured)
       - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-}
       - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-}
+      - GITHUB_REDIRECT_URI=${GITHUB_REDIRECT_URI:-}
+      - GITHUB_AUTH_MODE=${GITHUB_AUTH_MODE:-oauth}
+      - GITHUB_APP_ID=${GITHUB_APP_ID:-}
+      - GITHUB_APP_PRIVATE_KEY_BASE64=${GITHUB_APP_PRIVATE_KEY_BASE64:-}
       # Billing (optional until configured)
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
+      - STRIPE_PRO_PRICE_ID=${STRIPE_PRO_PRICE_ID:-}
+      - STRIPE_AGENCY_PRICE_ID=${STRIPE_AGENCY_PRICE_ID:-}
     depends_on:
       mongo:
         condition: service_healthy

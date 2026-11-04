@@ -1,8 +1,17 @@
 import express, { type Express } from "express";
 import fs from "fs";
 import path from "path";
+import { ENV } from "./config/env";
+import { logger } from "./config/logger";
 
 export function serveStatic(app: Express) {
+  if (!ENV.SERVE_STATIC) {
+    logger.info(
+      "SERVE_STATIC disabled — API-only deployment, SPA is served elsewhere",
+    );
+    return;
+  }
+
   const distPath = path.resolve(__dirname, "public");
   if (!fs.existsSync(distPath)) {
     throw new Error(

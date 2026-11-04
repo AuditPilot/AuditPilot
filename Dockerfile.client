@@ -1,0 +1,38 @@
+# AuditPilot — static client image (frontend unit).
+# Builds the SPA with Vite and serves it from nginx with an /api proxy to the
+# backend. Deploys independently of the API (Dockerfile.server).
+# Single-container alternative: ./Dockerfile.
+
+FROM node:20-alpine AS build
+WORKDIR /app
+
+# Dependencies first — layer-cached until the lockfile changes
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY . .
+
+# API origin baked in at build time (Vite inlines import.meta.env.VITE_API_BASE):
+#   - empty (default) -> same-origin, nginx proxies /api -> API_UPSTREAM,
+#     cookies stay SameSite=Lax;
+#   - "https://api.example.com" -> split deployment; pair with
+#     CLIENT_ORIGIN=<app origin> and COOKIE_SAMESITE=none on the API.
+ARG VITE_API_BASE=""
+ENV VITE_API_BASE=$VITE_API_BASE
+
+RUN npm run build:client
+
+FROM nginx:1.27-alpine AS runtime
+
+COPY --from=build /app/dist/public /usr/share/nginx/html
+
+# envsubst-templated config (API_UPSTREAM); handled by the stock nginx
+# docker-entrypoint's templates feature.
+COPY docker/nginx/default.conf.template /etc/nginx/templates/default.conf.template
+
+EXPOSE 80
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -q -O /dev/null http://127.0.0.1/index.html || exit 1
+
+CMD ["nginx", "-g", "daemon off;"]

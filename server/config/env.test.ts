@@ -75,6 +75,33 @@ describe("parseEnv", () => {
     expect(r.env!.DISABLE_WORKERS).toBe(true);
   });
 
+  it("defaults SERVE_STATIC on and honors 0/false", () => {
+    expect(parseEnv(base).env!.SERVE_STATIC).toBe(true);
+    expect(parseEnv({ ...base, SERVE_STATIC: "0" }).env!.SERVE_STATIC).toBe(false);
+    expect(parseEnv({ ...base, SERVE_STATIC: "false" }).env!.SERVE_STATIC).toBe(false);
+    expect(parseEnv({ ...base, SERVE_STATIC: "1" }).env!.SERVE_STATIC).toBe(true);
+  });
+
+  it("treats empty optional values as unset (compose -e VAR= passthroughs)", () => {
+    const r = parseEnv({
+      ...base,
+      GITHUB_CLIENT_ID: "",
+      APP_URL: "",
+      STRIPE_SECRET_KEY: "",
+      AI_MODEL_TRIAGE: "",
+      AI_INTEGRATIONS_OPENAI_API_KEY: "",
+      CLIENT_ORIGIN: "",
+    });
+    expect(r.ok).toBe(true);
+    expect(r.env!.GITHUB_CLIENT_ID).toBeUndefined();
+    expect(r.env!.APP_URL).toBeUndefined();
+    expect(r.env!.STRIPE_SECRET_KEY).toBeUndefined();
+    expect(r.env!.AI_MODEL_TRIAGE).toBeUndefined();
+    expect(r.env!.AI_INTEGRATIONS_OPENAI_API_KEY).toBeUndefined();
+    // CLIENT_ORIGIN falls back to its default when blanked
+    expect(r.env!.CLIENT_ORIGIN).toBe("http://localhost:5000,http://localhost:5173");
+  });
+
   it("accepts valid GitHub auth modes only", () => {
     expect(parseEnv({ ...base, GITHUB_AUTH_MODE: "bogus" }).ok).toBe(false);
     expect(parseEnv({ ...base, GITHUB_AUTH_MODE: "app" }).ok).toBe(true);

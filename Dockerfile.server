@@ -1,0 +1,37 @@
+# AuditPilot — API-only image (backend unit).
+# Deploys independently of the frontend; the SPA ships separately via
+# Dockerfile.client (nginx). Single-container alternative: ./Dockerfile.
+
+FROM node:20-alpine AS deps
+WORKDIR /app
+
+# Dependencies first — layer-cached until the lockfile changes
+COPY package.json package-lock.json ./
+RUN npm ci
+
+FROM deps AS build
+WORKDIR /app
+
+COPY . .
+
+# Server bundle only (esbuild -> dist/index.cjs); no client build here
+RUN npm run build:server
+
+FROM node:20-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+
+# Runtime deps only (the server bundle loads externals from node_modules)
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+# Server bundle; static serving is disabled via SERVE_STATIC=0 (set in compose
+# or by your orchestrator) since the SPA ships from its own image.
+COPY --from=build /app/dist/index.cjs ./dist/index.cjs
+
+EXPOSE 5000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD wget -q -O /dev/null "http://127.0.0.1:${PORT:-5000}/api/health" || exit 1
+
+CMD ["node", "dist/index.cjs"]
