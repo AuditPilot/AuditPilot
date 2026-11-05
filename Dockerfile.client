@@ -1,7 +1,6 @@
 # AuditPilot — static client image (frontend unit).
 # Builds the SPA with Vite and serves it from nginx with an /api proxy to the
-# backend. Deploys independently of the API (Dockerfile.server).
-# Single-container alternative: ./Dockerfile.
+# backend. Deploys independently of the API project in ../AuditPilot-API.
 
 FROM node:20-alpine AS build
 WORKDIR /app

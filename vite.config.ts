@@ -30,6 +30,9 @@ export default defineConfig({
   server: {
     host: "0.0.0.0",
     allowedHosts: true,
+    proxy: {
+      "/api": process.env.VITE_API_PROXY || "http://localhost:8080",
+    },
     fs: {
       strict: true,
       deny: ["**/.*"],
