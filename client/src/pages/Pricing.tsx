@@ -15,6 +15,10 @@ export default function Pricing() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const { toast } = useToast();
 
+  const localData = () => {
+    return localStorage.getItem("authenticated");
+  };
+
   const handleUpgrade = async (plan: string) => {
     setLoadingPlan(plan);
     try {
@@ -22,7 +26,7 @@ export default function Pricing() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan: plan.toLowerCase() }),
-        credentials: "include"
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -35,7 +39,7 @@ export default function Pricing() {
       toast({
         title: "Error",
         description: err.message || "Failed to start checkout. Please try again.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoadingPlan(null);
@@ -48,14 +52,24 @@ export default function Pricing() {
         title="Pricing - AuditPilot"
         description="Choose the perfect plan for your team's code health and security needs. Start with a free audit today."
       />
-      <Navbar />
+
+      {!localData() ? <Navbar /> : null}
 
       <div className="relative pt-32 pb-24 lg:pt-40">
         {/* backdrop */}
         <div className="absolute inset-0 bg-grid-dark" aria-hidden="true" />
-        <div className="pointer-events-none absolute -top-40 left-1/2 h-[380px] w-[720px] -translate-x-1/2 rounded-full bg-indigo-600/15 blur-[130px]" aria-hidden="true" />
-        <div className="pointer-events-none absolute top-64 left-[-8rem] h-72 w-72 rounded-full bg-violet-600/10 blur-[110px]" aria-hidden="true" />
-        <div className="pointer-events-none absolute top-72 right-[-6rem] h-72 w-72 rounded-full bg-cyan-500/10 blur-[110px]" aria-hidden="true" />
+        <div
+          className="pointer-events-none absolute -top-40 left-1/2 h-[380px] w-[720px] -translate-x-1/2 rounded-full bg-indigo-600/15 blur-[130px]"
+          aria-hidden="true"
+        />
+        <div
+          className="pointer-events-none absolute top-64 left-[-8rem] h-72 w-72 rounded-full bg-violet-600/10 blur-[110px]"
+          aria-hidden="true"
+        />
+        <div
+          className="pointer-events-none absolute top-72 right-[-6rem] h-72 w-72 rounded-full bg-cyan-500/10 blur-[110px]"
+          aria-hidden="true"
+        />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.span
@@ -82,11 +96,14 @@ export default function Pricing() {
             transition={{ duration: 0.55, delay: 0.12, ease: EASE }}
             className="text-lg sm:text-xl text-slate-400 mb-16 max-w-2xl mx-auto"
           >
-            Choose the plan that's right for your team. All plans include our
-            core security and performance auditing features.
+            Choose the plan that's right for your team. All plans include our core security and
+            performance auditing features.
           </motion.p>
 
-          <div id="plans" className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-6 max-w-6xl mx-auto items-start pb-10 scroll-mt-24">
+          <div
+            id="plans"
+            className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-6 max-w-6xl mx-auto items-start pb-10 scroll-mt-24"
+          >
             {/* Starter */}
             <PricingCard
               name="Starter"
@@ -112,7 +129,10 @@ export default function Pricing() {
               transition={{ duration: 0.6, delay: 0.12, ease: EASE }}
               className="relative z-10 md:-translate-y-6 md:scale-[1.03]"
             >
-              <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-b from-indigo-500/20 via-violet-500/10 to-transparent blur-2xl pointer-events-none" aria-hidden="true" />
+              <div
+                className="absolute -inset-4 rounded-[2rem] bg-gradient-to-b from-indigo-500/20 via-violet-500/10 to-transparent blur-2xl pointer-events-none"
+                aria-hidden="true"
+              />
               <PricingCard
                 featured
                 name="Pro"
@@ -129,8 +149,8 @@ export default function Pricing() {
                   "Custom Fix Suggestions",
                 ]}
                 buttonText="Upgrade to Pro"
-                loading={loadingPlan === 'Pro'}
-                onClick={() => handleUpgrade('pro')}
+                loading={loadingPlan === "Pro"}
+                onClick={() => handleUpgrade("pro")}
               />
             </motion.div>
 
@@ -149,8 +169,8 @@ export default function Pricing() {
                 "Enterprise Security",
               ]}
               buttonText="Contact Sales"
-              loading={loadingPlan === 'Agency'}
-              onClick={() => handleUpgrade('agency')}
+              loading={loadingPlan === "Agency"}
+              onClick={() => handleUpgrade("agency")}
             />
           </div>
 
@@ -190,25 +210,44 @@ export default function Pricing() {
 
       {/* ------------------------------------------------- FAQ */}
       <PricingFaq />
-
+      {!localData() ? (
+        <footer className="relative py-12 border-t border-white/5 bg-slate-950">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-8 text-slate-500 text-sm font-medium">
+            <div className="flex items-center gap-3">
+              <img
+                src="/logo.png"
+                alt="AuditPilot Logo"
+                className="w-8 h-8 rounded object-contain"
+              />
+              <span>© 2024 AuditPilot Inc.</span>
+            </div>
+            <div className="flex gap-8">
+              <Link href="/" className="hover:text-indigo-300 transition-colors">
+                Home
+              </Link>
+              <Link href="/how-it-works" className="hover:text-indigo-300 transition-colors">
+                How it Works
+              </Link>
+              <a href="#" className="hover:text-indigo-300 transition-colors">
+                Privacy Policy
+              </a>
+              <a href="#" className="hover:text-indigo-300 transition-colors">
+                Terms of Service
+              </a>
+            </div>
+            <div className="flex gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full text-slate-400 hover:bg-white/10 hover:text-white"
+              >
+                <Github className="w-5 h-5" />
+              </Button>
+            </div>
+          </div>
+        </footer>
+      ) : null}
       {/* footer */}
-      <footer className="relative py-12 border-t border-white/5 bg-slate-950">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-8 text-slate-500 text-sm font-medium">
-          <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="AuditPilot Logo" className="w-8 h-8 rounded object-contain" />
-            <span>© 2024 AuditPilot Inc.</span>
-          </div>
-          <div className="flex gap-8">
-            <Link href="/" className="hover:text-indigo-300 transition-colors">Home</Link>
-            <Link href="/how-it-works" className="hover:text-indigo-300 transition-colors">How it Works</Link>
-            <a href="#" className="hover:text-indigo-300 transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-indigo-300 transition-colors">Terms of Service</a>
-          </div>
-          <div className="flex gap-4">
-            <Button variant="ghost" size="icon" className="rounded-full text-slate-400 hover:bg-white/10 hover:text-white"><Github className="w-5 h-5" /></Button>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
@@ -244,7 +283,14 @@ function PricingCard({
   const ref = useRef<HTMLDivElement>(null);
   const reducedMotion = useReducedMotion();
 
-  const setTilt = (e: ReactPointerEvent<HTMLDivElement>, gx: number, gy: number, rx: number, ry: number, s: number) => {
+  const setTilt = (
+    e: ReactPointerEvent<HTMLDivElement>,
+    gx: number,
+    gy: number,
+    rx: number,
+    ry: number,
+    s: number,
+  ) => {
     const el = ref.current;
     if (!el) return;
     el.style.setProperty("--gx", `${gx * 100}%`);
@@ -295,7 +341,10 @@ function PricingCard({
         }`}
       >
         {/* cursor glare */}
-        <div className="tilt-glare pointer-events-none absolute inset-0 rounded-3xl opacity-0 transition-opacity duration-300 group-hover:opacity-100" aria-hidden="true" />
+        <div
+          className="tilt-glare pointer-events-none absolute inset-0 rounded-3xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          aria-hidden="true"
+        />
 
         {featured && (
           <>
@@ -314,10 +363,14 @@ function PricingCard({
             {tagline && <span className="text-xs font-medium text-slate-500">· {tagline}</span>}
           </h3>
           <div className="flex items-baseline gap-1 mt-3">
-            <span className={`text-5xl font-bold tracking-tight ${featured ? "text-gradient-dark" : "text-white"}`}>
+            <span
+              className={`text-5xl font-bold tracking-tight ${featured ? "text-gradient-dark" : "text-white"}`}
+            >
               {price}
             </span>
-            {price !== 'Custom' && price !== 'Free' && <span className="text-slate-500">/month</span>}
+            {price !== "Custom" && price !== "Free" && (
+              <span className="text-slate-500">/month</span>
+            )}
           </div>
           <p className="text-slate-400 mt-4 text-sm leading-relaxed">{description}</p>
         </div>
@@ -342,7 +395,7 @@ function PricingCard({
                 : "bg-white/10 border border-white/15 text-white hover:bg-white/15 hover:scale-[1.015]"
           }`}
         >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : buttonText || 'Get Started'}
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : buttonText || "Get Started"}
         </Button>
       </div>
     </motion.div>
@@ -385,7 +438,10 @@ function AnimatedCheck({ delay, featured }: { delay: number; featured: boolean }
         className="stroke-current"
         variants={{
           hidden: { pathLength: 0 },
-          visible: { pathLength: 1, transition: { duration: 0.4, delay: delay + 0.16, ease: "easeOut" } },
+          visible: {
+            pathLength: 1,
+            transition: { duration: 0.4, delay: delay + 0.16, ease: "easeOut" },
+          },
         }}
       />
     </motion.svg>
