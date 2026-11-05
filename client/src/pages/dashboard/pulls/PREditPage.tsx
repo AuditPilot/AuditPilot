@@ -50,17 +50,17 @@ function CodePane({
 }) {
   const lines = content.split("\n");
   return (
-    <div className="max-h-[400px] overflow-auto rounded-xl border border-slate-200 bg-white">
+    <div className="max-h-[400px] overflow-auto rounded-xl border border-white/10 bg-[#0d1117]">
       {lines.map((line, i) => {
         const n = i + 1;
         const inRange =
           highlightFrom != null && highlightTo != null && n >= highlightFrom && n <= highlightTo;
         return (
-          <div key={i} className={`flex ${inRange ? "bg-indigo-50" : n % 2 === 0 ? "bg-slate-50/30" : ""}`}>
-            <span className="w-10 shrink-0 select-none text-right pr-2 pt-1 text-[10px] text-slate-300 font-mono">
+          <div key={i} className={`flex ${inRange ? "bg-indigo-500/10" : n % 2 === 0 ? "bg-white/[0.02]" : ""}`}>
+            <span className="w-10 shrink-0 select-none text-right pr-2 pt-1 text-[10px] text-slate-600 font-mono">
               {n}
             </span>
-            <pre className="flex-1 py-0.5 font-mono text-xs whitespace-pre-wrap break-words text-slate-700">
+            <pre className="flex-1 py-0.5 font-mono text-xs whitespace-pre-wrap break-words text-slate-300">
               {line || " "}
             </pre>
           </div>
@@ -114,7 +114,7 @@ export default function PREditPage() {
     return (
       <DashboardLayout>
         <div className="flex justify-center py-20">
-          <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+          <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
         </div>
       </DashboardLayout>
     );
@@ -123,7 +123,7 @@ export default function PREditPage() {
   if (isLoadingFiles) {
     return (
       <DashboardLayout>
-        <div className="flex justify-center py-4"><Loader2 className="w-4 h-4 text-indigo-600 animate-spin" /></div>
+        <div className="flex justify-center py-4"><Loader2 className="w-4 h-4 text-indigo-400 animate-spin" /></div>
       </DashboardLayout>
     );
   }
@@ -191,7 +191,7 @@ export default function PREditPage() {
             <ArrowLeft className="w-4 h-4 mr-2" /> Back to PR
           </Button>
           <div className="flex items-center gap-2">
-            <Badge className="bg-indigo-100 text-indigo-800 hover:bg-indigo-100 border-none px-3">
+            <Badge className="bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/10 border-none px-3">
               PR #{pr.number}
             </Badge>
             <Badge variant="outline" className="text-slate-500">
@@ -203,16 +203,16 @@ export default function PREditPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left: File list summary */}
           <div className="lg:col-span-1 space-y-6">
-            <Card className="border-slate-200 shadow-sm overflow-hidden">
-              <CardHeader className="bg-slate-50/50 border-b border-slate-100 py-4 px-6">
-                <CardTitle className="text-lg font-bold text-slate-800">
+            <Card className="border border-white/10 bg-slate-900/60 shadow-sm overflow-hidden">
+              <CardHeader className="bg-white/[0.03] border-b border-white/5 py-4 px-6">
+                <CardTitle className="text-lg font-bold text-slate-100">
                   {modifiedFiles.length} {modifiedFiles.length !== 1 ? "Files Changed" : "File Changed"}
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-6">
-                <div className="space-y-3 text-sm text-slate-600">
+                <div className="space-y-3 text-sm text-slate-300">
                   {modifiedFiles.map((f: any) => (
-                    <div key={f.filename} className="flex items-center justify-between p-2 rounded-lg bg-slate-50">
+                    <div key={f.filename} className="flex items-center justify-between p-2 rounded-lg bg-white/[0.03]">
                       <span className="truncate max-w-xs">
                         {f.filename}
                       </span>
@@ -224,7 +224,7 @@ export default function PREditPage() {
                   {deletedFiles.length > 0 && (
                     <div>
                       {deletedFiles.map((f: any) => (
-                        <div key={f.filename} className="flex items-center justify-between p-2 rounded-lg bg-slate-100 text-slate-500">
+                        <div key={f.filename} className="flex items-center justify-between p-2 rounded-lg bg-white/[0.05] text-slate-500">
                           <span className="line-through text-slate-400 truncate max-w-xs">
                             {f.filename}
                           </span>
@@ -240,18 +240,18 @@ export default function PREditPage() {
             </Card>
 
             {/* Summary stats */}
-            <Card className="border-slate-200 shadow-sm overflow-hidden">
-              <CardHeader className="bg-slate-50/50 border-b border-slate-100 py-4 px-6">
-                <CardTitle className="text-lg font-bold text-slate-800">Summary</CardTitle>
+            <Card className="border border-white/10 bg-slate-900/60 shadow-sm overflow-hidden">
+              <CardHeader className="bg-white/[0.03] border-b border-white/5 py-4 px-6">
+                <CardTitle className="text-lg font-bold text-slate-100">Summary</CardTitle>
               </CardHeader>
               <CardContent className="p-6">
-                <p className="text-slate-600 mb-4">
+                <p className="text-slate-300 mb-4">
                   <strong>Additions:</strong> {files?.reduce((sum: any, f: any) => sum + (f.additions || 0), 0)}
                 </p>
-                <p className="text-slate-600 mb-4">
+                <p className="text-slate-300 mb-4">
                   <strong>Deletions:</strong> {files?.reduce((sum: any, f: any) => sum + (f.deletions || 0), 0)}
                 </p>
-                <p className="text-slate-600">
+                <p className="text-slate-300">
                   <strong>Modified:</strong> {modifiedFiles.length} files
                 </p>
               </CardContent>
@@ -268,11 +268,11 @@ export default function PREditPage() {
               return (
                 <Card
                   key={idx}
-                  className={`border-slate-200 shadow-sm overflow-hidden ${isEdited ? "border-indigo-500/30 bg-indigo-50/10" : ""}`}
+                  className={`overflow-hidden shadow-sm ${isEdited ? "bg-indigo-500/10 border border-indigo-500/40 shadow-indigo-950/40" : "bg-slate-900/60 border border-white/10"}`}
                 >
-                  <CardHeader className="bg-slate-50/50 border-b border-slate-100 py-4 px-6 flex flex-row items-center justify-between">
+                  <CardHeader className="bg-white/[0.03] border-b border-white/5 py-4 px-6 flex flex-row items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${isEdited ? "bg-indigo-100 text-indigo-600" : "bg-white text-slate-300"}`}>
+                      <div className={`p-2 rounded-lg ${isEdited ? "bg-indigo-500/10 text-indigo-400" : "bg-white/5 text-slate-300"}`}>
                         <Code2 className="w-4 h-4" /> {file.filename}
                       </div>
                       <span className="text-[11px] text-slate-500">
@@ -282,7 +282,7 @@ export default function PREditPage() {
                     <div className="flex items-center gap-2">
                       <Badge
                         variant="outline"
-                        className="text-[10px] text-indigo-600"
+                        className="text-[10px] text-indigo-300"
                         style={{ background: isEdited ? "indigo-100" : "transparent" }}
                       >
                         {isEdited ? "Modified" : "Original"}
@@ -296,7 +296,7 @@ export default function PREditPage() {
                   <CardContent className="p-0">
                     <div className="grid grid-cols-1 lg:grid-cols-2 h-full">
                       {/* Left: Current Code */}
-                      <div className="p-6 bg-slate-50 border-r border-slate-100">
+                      <div className="p-6 bg-white/[0.02] border-r border-white/5">
         <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-3 flex items-center justify-between">
           <span>Current Code</span>
         </div>
@@ -308,7 +308,7 @@ export default function PREditPage() {
         <div className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-3 flex justify-between items-center">
           <span>Proposed Fix (Editable)</span>
           <Badge
-            className="bg-indigo-100 text-indigo-700 hover:bg-indigo-100 border-none text-[9px]"
+            className="bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/10 border-none text-[9px]"
             style={{ background: isEdited ? "indigo-100" : "indigo-100" }}
           >
             {isEdited ? "Modified" : "Default"}
@@ -337,14 +337,14 @@ export default function PREditPage() {
 
         {/* Save & Create PR section at bottom */}
         <div className="pt-10 flex flex-col items-center gap-3 sticky bottom-8 z-30">
-          <div className="flex items-center gap-2 text-sm text-slate-500 bg-white/90 px-3 py-1 rounded-full border border-slate-100 shadow-sm">
+          <div className="flex items-center gap-2 text-sm text-slate-400 bg-slate-900/90 px-3 py-1 rounded-full border border-white/10 shadow-sm">
             {modifiedFiles.length} of {modifiedFiles.length + deletedFiles.length} files {modifiedFiles.length > 0 ? "ready" : "no changes"}
           </div>
 
           <Button
             onClick={handleSaveAndCreatePR}
             disabled={updatePRMutation.isPending || modifiedFiles.length === 0}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-16 h-16 text-xl font-bold shadow-2xl shadow-indigo-200 group rounded-full border-4 border-white transition-all transform hover:scale-105 active:scale-95"
+            className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:opacity-90 text-white px-16 h-16 text-xl font-bold shadow-2xl shadow-indigo-500/25 group rounded-full border-4 border-slate-950 transition-all transform hover:scale-105 active:scale-95"
           >
             {updatePRMutation.isPending ? (
               <>

@@ -96,14 +96,14 @@ export default function AuditProgressPage() {
         <div className="w-full max-w-md space-y-8">
           {error ? (
             <div className="space-y-6 text-center">
-              <XCircle className="mx-auto w-12 h-12 text-red-500" />
+              <XCircle className="mx-auto w-12 h-12 text-rose-400" />
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">Audit failed</h2>
+                <h2 className="text-lg font-semibold text-slate-100">Audit failed</h2>
                 <p className="mt-2 text-sm text-slate-500">{error}</p>
               </div>
               <button
                 onClick={() => setLocation("/app")}
-                className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 transition-colors"
+                className="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
               >
                 Back to repositories
               </button>
@@ -112,7 +112,7 @@ export default function AuditProgressPage() {
             <>
               <div className="relative pt-10">
                 <div className="flex justify-between mb-2">
-                  <span className="text-sm font-medium text-indigo-600 animate-pulse">Running {repo} Audit...</span>
+                  <span className="text-sm font-medium text-indigo-400 animate-pulse">Running {repo} Audit...</span>
                   <span className="text-sm font-medium text-slate-500">{progress}%</span>
                 </div>
                 <Progress value={progress} className="h-2" />
@@ -131,27 +131,27 @@ export default function AuditProgressPage() {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: idx * 0.2 }}
                       className={`flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 ${isCurrent
-                        ? 'bg-white border-indigo-200 shadow-md shadow-indigo-500/5'
+                        ? 'bg-slate-900/80 border-indigo-500/30 shadow-md shadow-indigo-950/50'
                         : isCompleted
-                          ? 'bg-slate-50/50 border-transparent opacity-60'
+                          ? 'bg-white/[0.03] border-transparent opacity-60'
                           : 'border-transparent opacity-30'
                         }`}
                     >
-                      <div className={`p-2 rounded-lg ${isCurrent ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-500'}`}>
+                      <div className={`p-2 rounded-lg ${isCurrent ? 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white' : 'bg-white/5 text-slate-500'}`}>
                         <Icon className="w-5 h-5" />
                       </div>
                       <div className="flex-1">
-                        <span className={`text-sm font-medium ${isCurrent ? 'text-slate-900' : 'text-slate-500'}`}>
+                        <span className={`text-sm font-medium ${isCurrent ? 'text-slate-100' : 'text-slate-500'}`}>
                           {s.label}
                         </span>
                       </div>
                       {isCompleted && (
                         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
-                          <Shield className="w-4 h-4 text-green-500" />
+                          <Shield className="w-4 h-4 text-emerald-400" />
                         </motion.div>
                       )}
                       {isCurrent && (
-                        <Loader2 className="w-4 h-4 text-indigo-600 animate-spin" />
+                        <Loader2 className="w-4 h-4 text-indigo-400 animate-spin" />
                       )}
                     </motion.div>
                   );

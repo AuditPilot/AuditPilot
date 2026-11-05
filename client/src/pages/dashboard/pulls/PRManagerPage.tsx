@@ -170,9 +170,11 @@ export default function PRManagerPage() {
   const finalizing = repoFixMutation.isPending || createHistoryMutation.isPending;
 
   return (
-    <div className="min-h-screen bg-[#0b0b0c] text-slate-100 selection:bg-indigo-500/40">
+    <div className="min-h-screen bg-slate-950 text-slate-100 selection:bg-indigo-500/40">
+      {/* Aurora glow backdrop — same atmosphere as the dashboard pages */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 bg-mesh-light" />
       {/* Top bar */}
-      <div className="sticky top-0 z-30 border-b border-gray-700/60 bg-[#0d0d0f]/80 backdrop-blur">
+      <div className="sticky top-0 z-30 border-b border-white/5 bg-slate-950/80 backdrop-blur">
         <div className="max-w-[1500px] mx-auto px-6 h-14 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <button
@@ -181,7 +183,7 @@ export default function PRManagerPage() {
             >
               <ArrowLeft className="w-4 h-4" /> Pull Requests
             </button>
-            <span className="h-4 w-px bg-gray-700" />
+            <span className="h-4 w-px bg-white/10" />
             <h1 className="text-sm font-bold tracking-wide text-slate-100 uppercase">PR Manager</h1>
             <span className="hidden md:inline text-[11px] text-slate-500">drafts · audit trail · one-click finalization</span>
           </div>
@@ -241,7 +243,7 @@ export default function PRManagerPage() {
               href={selectedAudit.prUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 h-9 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition"
+              className="flex items-center gap-2 h-9 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:opacity-90 text-white text-xs font-bold transition"
             >
               Open Pull Request ↗
             </a>

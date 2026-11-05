@@ -1,4 +1,5 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
+import { useLayoutEffect } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -64,7 +65,22 @@ function Router() {
   );
 }
 
+/**
+ * The dashboard (and only the dashboard) renders inside the Aurora Glass dark
+ * theme. The `.dark` class is applied at the <html> level — not a wrapper
+ * element — because shadcn portals (dialogs, toasts, selects) attach to
+ * <body> and would otherwise escape a route-scoped dark subtree.
+ */
+function useDashboardDarkMode() {
+  const [location] = useLocation();
+  useLayoutEffect(() => {
+    document.documentElement.classList.toggle("dark", location.startsWith("/app"));
+  }, [location]);
+}
+
 function App() {
+  useDashboardDarkMode();
+
   // Authentication is now cookie-based (httpOnly JWT set by the login callback).
   // No token is captured from URLs and nothing auth-sensitive is stored locally.
   // The "authenticated" localStorage flag is only a UX hint owned by the

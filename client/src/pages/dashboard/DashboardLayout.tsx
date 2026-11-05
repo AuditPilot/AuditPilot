@@ -26,12 +26,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="min-h-screen bg-slate-950 flex">
+      {/* Aurora glow backdrop — same atmosphere as the marketing pages */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 bg-mesh-light" />
+
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-slate-200 hidden md:flex flex-col fixed inset-y-0">
-        <div className="h-16 flex items-center px-6 border-b border-slate-100">
+      <aside className="w-64 bg-slate-950/70 backdrop-blur-xl border-r border-white/5 hidden md:flex flex-col fixed inset-y-0">
+        <div className="h-16 flex items-center px-6 border-b border-white/5">
           <img src="/logo.png" alt="AuditPilot Logo" className="w-10 h-10 rounded-lg object-contain" />
-          <span className="font-bold text-xl tracking-tight text-slate-900 transition-colors hover:text-indigo-600">AuditPilot</span>
+          <span className="font-bold text-xl tracking-tight text-white transition-colors hover:text-indigo-400">AuditPilot</span>
         </div>
 
         <div className="p-4 space-y-1">
@@ -70,8 +73,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           />
 
           {authStatus?.user && (
-            <div className="mt-8 p-3 bg-indigo-50/50 rounded-xl border border-indigo-100 mx-3">
-              <div className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider mb-2">Plan: {authStatus.user.plan}</div>
+            <div className="mt-8 p-3 bg-indigo-500/10 rounded-xl border border-indigo-500/20 mx-3">
+              <div className="text-[10px] font-bold text-indigo-300 uppercase tracking-wider mb-2">Plan: {authStatus.user.plan}</div>
               <UsageCounter
                 label="Audits"
                 used={authStatus.user.auditsUsed}
@@ -87,22 +90,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           )}
         </div>
 
-        <div className="mt-auto p-4 border-t border-slate-100">
+        <div className="mt-auto p-4 border-t border-white/5">
           <div className="flex items-center gap-3">
             {authStatus?.user?.avatarUrl ? (
               <img src={authStatus.user.avatarUrl} className="w-8 h-8 rounded-full" alt="User Avatar" />
             ) : (
-              <div className="w-8 h-8 rounded-full bg-slate-200"></div>
+              <div className="w-8 h-8 rounded-full bg-slate-700"></div>
             )}
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-slate-900 truncate">{authStatus?.user?.displayName || "Loading..."}</div>
+              <div className="text-sm font-medium text-slate-100 truncate">{authStatus?.user?.displayName || "Loading..."}</div>
               <div className="text-xs text-slate-500 truncate">{authStatus?.user?.username || "Fetching..."}</div>
             </div>
             <Button
               variant="ghost"
               size="icon"
               onClick={handleLogout}
-              className="text-slate-400 hover:text-red-600 hover:bg-red-50"
+              className="text-slate-400 hover:text-rose-400 hover:bg-rose-500/10"
             >
               <Eye className="w-4 h-4 rotate-180" />
             </Button>
@@ -112,17 +115,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Main Content */}
       <main className="flex-1 md:ml-64 min-h-screen">
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-20">
+        <header className="h-16 bg-slate-950/70 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-8 sticky top-0 z-20">
           <div className="flex items-center gap-4">
-            <h1 className="text-lg font-bold text-slate-800 capitalize">
+            <h1 className="text-lg font-bold text-slate-100 capitalize">
               {location.split('/').pop()?.replace('-', ' ') || 'Dashboard'}
             </h1>
           </div>
           <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" className="hidden sm:flex border-slate-200 text-slate-600">
+            <Button variant="outline" size="sm" className="hidden sm:flex border-white/10 text-slate-300 hover:bg-white/5 hover:text-white">
               Documentation
             </Button>
-            <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs ring-2 ring-white">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white font-bold text-xs ring-2 ring-slate-950">
               {authStatus?.user?.displayName?.[0] || "?"}
             </div>
           </div>

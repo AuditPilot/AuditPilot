@@ -207,13 +207,13 @@ function effectiveWindow(f: FileState): { top: number; bottom: number } {
 function severityBadgeClass(severity?: string) {
   switch ((severity || "").toLowerCase()) {
     case "critical":
-      return "bg-rose-50 text-rose-700 border-rose-200";
+      return "bg-rose-500/10 text-rose-300 border-rose-500/30";
     case "high":
-      return "bg-orange-50 text-orange-700 border-orange-200";
+      return "bg-orange-500/10 text-orange-300 border-orange-500/30";
     case "medium":
-      return "bg-amber-50 text-amber-700 border-amber-200";
+      return "bg-amber-500/10 text-amber-300 border-amber-500/30";
     default:
-      return "bg-slate-50 text-slate-600 border-slate-200";
+      return "bg-white/5 text-slate-400 border-white/10";
   }
 }
 
@@ -224,11 +224,11 @@ function FilePathBreadcrumbs({ path }: { path: string }) {
     <div className="flex items-center gap-1 flex-wrap min-w-0">
       {parts.map((part, i) => (
         <React.Fragment key={i}>
-          {i > 0 && <span className="text-slate-300 text-xs">/</span>}
+          {i > 0 && <span className="text-slate-600 text-xs">/</span>}
           <span
             className={
               i === parts.length - 1
-                ? "text-[13px] font-semibold text-slate-800 truncate"
+                ? "text-[13px] font-semibold text-slate-200 truncate"
                 : "text-[13px] text-slate-500 truncate"
             }
           >
@@ -257,24 +257,24 @@ function RowCommands({
 }) {
   if (!onEdit && !onInsert && !onDelete && !onRestore) return null;
   return (
-    <div className="absolute right-2 top-1 hidden group-hover:flex items-center gap-0.5 bg-white/95 border border-slate-200 rounded-md shadow-sm px-1 py-0.5 z-10">
+    <div className="absolute right-2 top-1 hidden group-hover:flex items-center gap-0.5 bg-slate-900/95 backdrop-blur border border-white/10 rounded-md shadow-sm px-1 py-0.5 z-10">
       {onRestore && (
-        <button title="Restore line" className="p-1 text-slate-500 hover:text-emerald-600" onClick={onRestore}>
+        <button title="Restore line" className="p-1 text-slate-400 hover:text-emerald-400" onClick={onRestore}>
           <RotateCcw className="w-3.5 h-3.5" />
         </button>
       )}
       {onEdit && (
-        <button title="Edit line" className="p-1 text-slate-500 hover:text-indigo-600" onClick={onEdit}>
+        <button title="Edit line" className="p-1 text-slate-400 hover:text-indigo-400" onClick={onEdit}>
           <Pencil className="w-3.5 h-3.5" />
         </button>
       )}
       {onInsert && (
-        <button title="Insert new line below" className="p-1 text-slate-500 hover:text-emerald-600" onClick={onInsert}>
+        <button title="Insert new line below" className="p-1 text-slate-400 hover:text-emerald-400" onClick={onInsert}>
           <Plus className="w-3.5 h-3.5" />
         </button>
       )}
       {onDelete && (
-        <button title="Remove line" className="p-1 text-slate-500 hover:text-rose-600" onClick={onDelete}>
+        <button title="Remove line" className="p-1 text-slate-400 hover:text-rose-400" onClick={onDelete}>
           <X className="w-3.5 h-3.5" />
         </button>
       )}
@@ -312,7 +312,7 @@ function DiffRow({
       ref={ref}
       rows={1}
       defaultValue={initial}
-      className={`flex-1 font-mono text-xs p-1 pr-2 outline-none resize-none min-h-[24px] bg-white ${tone}`}
+      className={`flex-1 font-mono text-xs p-1 pr-2 outline-none resize-none min-h-[24px] bg-transparent ${tone}`}
       onKeyDown={(e) => {
         if (e.key === "Enter") {
           e.preventDefault();
@@ -326,18 +326,18 @@ function DiffRow({
 
   if (row.type === "context") {
     return editing ? (
-      <div className="flex bg-white ring-2 ring-indigo-400 rounded-sm">
-        <span className="w-12 shrink-0 select-none text-right pr-2 pt-1 text-[11px] font-mono bg-slate-100 text-slate-400">{row.old}</span>
-        <span className="w-12 shrink-0 select-none text-right pr-2 pt-1 text-[11px] font-mono bg-slate-100 text-slate-400">{row.new}</span>
-        <span className="w-5 shrink-0 select-none font-mono pt-1 text-center text-slate-300 text-[11px]">·</span>
-        {editor(row.text, "text-slate-700")}
+      <div className="flex bg-slate-900 ring-2 ring-indigo-500/60 rounded-sm">
+        <span className="w-12 shrink-0 select-none text-right pr-2 pt-1 text-[11px] font-mono bg-white/5 text-slate-500">{row.old}</span>
+        <span className="w-12 shrink-0 select-none text-right pr-2 pt-1 text-[11px] font-mono bg-white/5 text-slate-500">{row.new}</span>
+        <span className="w-5 shrink-0 select-none font-mono pt-1 text-center text-slate-600 text-[11px]">·</span>
+        {editor(row.text, "text-slate-200")}
       </div>
     ) : (
-      <div className="group flex bg-white hover:bg-slate-50 relative">
-        <span className="w-12 shrink-0 select-none text-right pr-2 pt-1 text-[11px] font-mono bg-slate-100 text-slate-400">{row.old}</span>
-        <span className="w-12 shrink-0 select-none text-right pr-2 pt-1 text-[11px] font-mono bg-slate-100 text-slate-400">{row.new}</span>
-        <span className="w-5 shrink-0 select-none font-mono pt-1 text-center text-slate-300 text-[11px]">·</span>
-        <pre className="flex-1 pr-24 py-0.5 font-mono text-xs whitespace-pre text-slate-700">{row.text.length ? row.text : " "}</pre>
+      <div className="group flex bg-transparent hover:bg-white/[0.03] relative">
+        <span className="w-12 shrink-0 select-none text-right pr-2 pt-1 text-[11px] font-mono bg-white/5 text-slate-500">{row.old}</span>
+        <span className="w-12 shrink-0 select-none text-right pr-2 pt-1 text-[11px] font-mono bg-white/5 text-slate-500">{row.new}</span>
+        <span className="w-5 shrink-0 select-none font-mono pt-1 text-center text-slate-600 text-[11px]">·</span>
+        <pre className="flex-1 pr-24 py-0.5 font-mono text-xs whitespace-pre text-slate-300">{row.text.length ? row.text : " "}</pre>
         {children}
       </div>
     );
@@ -345,11 +345,11 @@ function DiffRow({
 
   if (row.type === "removed") {
     return (
-      <div className="group flex bg-rose-50/70 hover:bg-rose-50 relative">
-        <span className="w-12 shrink-0 select-none text-right pr-2 pt-1 text-[11px] font-mono bg-rose-100/60 text-rose-400">{row.old}</span>
-        <span className="w-12 shrink-0 select-none bg-rose-100/60 border-l border-rose-100" />
+      <div className="group flex bg-rose-500/[0.07] hover:bg-rose-500/[0.12] relative">
+        <span className="w-12 shrink-0 select-none text-right pr-2 pt-1 text-[11px] font-mono bg-rose-500/10 text-rose-500/70">{row.old}</span>
+        <span className="w-12 shrink-0 select-none bg-rose-500/10 border-l border-rose-500/20" />
         <span className="w-5 shrink-0 select-none font-mono pt-1 text-center text-rose-500 text-[11px]">−</span>
-        <pre className="flex-1 pr-24 py-0.5 font-mono text-xs whitespace-pre text-rose-700">{row.text.length ? row.text : " "}</pre>
+        <pre className="flex-1 pr-24 py-0.5 font-mono text-xs whitespace-pre text-rose-300">{row.text.length ? row.text : " "}</pre>
         {children}
       </div>
     );
@@ -357,18 +357,18 @@ function DiffRow({
 
   // added
   return editing ? (
-    <div className="flex bg-emerald-50 ring-2 ring-indigo-400 rounded-sm">
-      <span className="w-12 shrink-0 select-none bg-emerald-100/60 border-r border-emerald-100" />
-      <span className="w-12 shrink-0 select-none text-right pr-2 pt-1 text-[11px] font-mono bg-emerald-100/60 text-emerald-500">{row.new}</span>
-      <span className="w-5 shrink-0 select-none font-mono pt-1 text-center text-emerald-600 text-[11px]">+</span>
-      {editor(row.text, "text-slate-800 bg-transparent")}
+    <div className="flex bg-slate-900 ring-2 ring-indigo-500/60 rounded-sm">
+      <span className="w-12 shrink-0 select-none bg-emerald-500/10 border-r border-emerald-500/20" />
+      <span className="w-12 shrink-0 select-none text-right pr-2 pt-1 text-[11px] font-mono bg-emerald-500/10 text-emerald-400/70">{row.new}</span>
+      <span className="w-5 shrink-0 select-none font-mono pt-1 text-center text-emerald-400 text-[11px]">+</span>
+      {editor(row.text, "text-slate-100 bg-transparent")}
     </div>
   ) : (
-    <div className="group flex bg-emerald-50/70 hover:bg-emerald-50 relative">
-      <span className="w-12 shrink-0 select-none bg-emerald-100/60 border-r border-emerald-100" />
-      <span className="w-12 shrink-0 select-none text-right pr-2 pt-1 text-[11px] font-mono bg-emerald-100/60 text-emerald-500">{row.new}</span>
-      <span className="w-5 shrink-0 select-none font-mono pt-1 text-center text-emerald-600 text-[11px]">+</span>
-      <pre className="flex-1 pr-24 py-0.5 font-mono text-xs whitespace-pre text-slate-800">{row.text.length ? row.text : " "}</pre>
+    <div className="group flex bg-emerald-500/[0.06] hover:bg-emerald-500/[0.12] relative">
+      <span className="w-12 shrink-0 select-none bg-emerald-500/10 border-r border-emerald-500/20" />
+      <span className="w-12 shrink-0 select-none text-right pr-2 pt-1 text-[11px] font-mono bg-emerald-500/10 text-emerald-400/70">{row.new}</span>
+      <span className="w-5 shrink-0 select-none font-mono pt-1 text-center text-emerald-400 text-[11px]">+</span>
+      <pre className="flex-1 pr-24 py-0.5 font-mono text-xs whitespace-pre text-slate-200">{row.text.length ? row.text : " "}</pre>
       {children}
     </div>
   );
@@ -445,18 +445,18 @@ function FileDiffCard({
   const editKeyOf = (row: Row) => `${row.segId}:${row.i}:${row.type}`;
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden" id={`file-${file.path}`}>
+    <div className="rounded-xl border border-white/10 bg-slate-900/60 shadow-sm overflow-hidden" id={`file-${file.path}`}>
       {/* File header */}
-      <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-slate-50/70 border-b border-slate-200">
+      <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-white/[0.03] border-b border-white/10">
         <div className="flex items-center gap-2 min-w-0">
           <FilePathBreadcrumbs path={file.path} />
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {added > 0 && (
-            <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-full px-2 py-0.5">+{added}</span>
+            <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2 py-0.5">+{added}</span>
           )}
           {removed > 0 && (
-            <span className="text-[11px] font-bold text-rose-600 bg-rose-50 border border-rose-100 rounded-full px-2 py-0.5">−{removed}</span>
+            <span className="text-[11px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-full px-2 py-0.5">−{removed}</span>
           )}
           <label className="flex items-center gap-1.5 text-[11px] text-slate-500 cursor-pointer select-none">
             <input type="checkbox" checked={file.viewed} onChange={() => ops.toggleViewed(file.path)} className="h-3.5 w-3.5 accent-indigo-600" />
@@ -467,31 +467,31 @@ function FileDiffCard({
 
       {/* Linked issue notes (comment-thread style) */}
       {items.length > 0 && (
-        <div className="px-4 py-2 border-b border-slate-100 bg-white flex flex-col gap-1.5">
+        <div className="px-4 py-2 border-b border-white/5 bg-transparent flex flex-col gap-1.5">
           {items.map((it) => (
             <div key={it.itemId} className="flex items-start gap-2 text-xs">
               <AlertCircle
                 className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${it.severity === "critical" ? "text-rose-500" : "text-amber-500"}`}
               />
               <div className="min-w-0">
-                <p className="text-slate-700 leading-snug">{it.label}</p>
+                <p className="text-slate-300 leading-snug">{it.label}</p>
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                   <Badge variant="outline" className={`text-[9px] px-1.5 ${severityBadgeClass(it.severity)}`}>
                     {it.severity || "medium"}
                   </Badge>
                   {it.match ? (
-                    <Badge variant="outline" className="text-[9px] px-1.5 text-emerald-700 border-emerald-200 bg-emerald-50">
+                    <Badge variant="outline" className="text-[9px] px-1.5 text-emerald-300 border-emerald-500/30 bg-emerald-500/10">
                       <Link2 className="w-2.5 h-2.5 mr-1" /> anchored at line {it.match.line}
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="text-[9px] px-1.5 text-amber-700 border-amber-200 bg-amber-50">
+                    <Badge variant="outline" className="text-[9px] px-1.5 text-amber-300 border-amber-500/30 bg-amber-500/10">
                       <Link2Off className="w-2.5 h-2.5 mr-1" /> not anchored — edit lines manually
                     </Badge>
                   )}
                   {!it.match && it.newCode && (
                     <details className="text-[10px] text-slate-400">
-                      <summary className="cursor-pointer hover:text-slate-600 select-none">suggested fix</summary>
-                      <pre className="mt-1 p-2 bg-slate-50 border border-slate-100 rounded font-mono text-[10px] whitespace-pre-wrap max-h-40 overflow-auto text-slate-600">
+                      <summary className="cursor-pointer hover:text-slate-300 select-none">suggested fix</summary>
+                      <pre className="mt-1 p-2 bg-black/40 border border-white/5 rounded font-mono text-[10px] whitespace-pre-wrap max-h-40 overflow-auto text-slate-400">
                         {it.newCode}
                       </pre>
                     </details>
@@ -504,11 +504,11 @@ function FileDiffCard({
       )}
 
       {/* Hunk header + expand-all */}
-      <div className="flex items-center justify-between px-3 py-1 bg-slate-100/80 border-b border-slate-200 text-[11px] text-slate-500 gap-3">
+      <div className="flex items-center justify-between px-3 py-1 bg-white/[0.02] border-b border-white/10 text-[11px] text-slate-500 gap-3">
         <span className="font-mono truncate">{hunk ?? `file window ${effWin.top}–${effWin.bottom}`}</span>
         <div className="flex items-center gap-3 shrink-0">
-          <span className="text-slate-400 hidden md:inline">click ✎ to edit a line · ＋ inserts below · × removes</span>
-          <button className="text-[10px] underline hover:text-slate-700" onClick={() => ops.expandAll(file.path)}>
+          <span className="text-slate-500 hidden md:inline">click ✎ to edit a line · ＋ inserts below · × removes</span>
+          <button className="text-[10px] underline hover:text-slate-300" onClick={() => ops.expandAll(file.path)}>
             Expand all
           </button>
         </div>
@@ -518,7 +518,7 @@ function FileDiffCard({
       <div>
         {effWin.top > 1 && (
           <button
-            className="w-full px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border-b border-slate-100 text-left text-[11px] text-slate-500"
+            className="w-full px-3 py-1.5 bg-white/[0.03] hover:bg-white/[0.06] border-b border-white/5 text-left text-[11px] text-slate-500"
             onClick={() => ops.setWindow(file.path, Math.max(1, effWin.top - 50), effWin.bottom)}
           >
             ⇧ Expand 50 lines above ({effWin.top - 1} hidden)
@@ -566,7 +566,7 @@ function FileDiffCard({
 
         {effWin.bottom < file.totalLines && (
           <button
-            className="w-full px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-left text-[11px] text-slate-500"
+            className="w-full px-3 py-1.5 bg-white/[0.03] hover:bg-white/[0.06] text-left text-[11px] text-slate-500"
             onClick={() => ops.setWindow(file.path, effWin.top, Math.min(file.totalLines, effWin.bottom + 50))}
           >
             ⇩ Expand 50 lines below ({file.totalLines - effWin.bottom} hidden)
@@ -575,7 +575,7 @@ function FileDiffCard({
       </div>
 
       {edits && (
-        <div className="px-4 py-2 bg-indigo-50/40 border-t border-indigo-100 text-[11px] text-indigo-600 flex items-center justify-between">
+        <div className="px-4 py-2 bg-indigo-500/10 border-t border-indigo-500/20 text-[11px] text-indigo-300 flex items-center justify-between">
           <span>This file will be committed with your reviewed edits when you create the PR.</span>
           <span className="font-bold">
             {added} new · {removed} removed
@@ -584,7 +584,7 @@ function FileDiffCard({
       )}
 
       {file.truncated && (
-        <div className="px-4 py-2 bg-slate-50 text-[11px] text-slate-400 border-t border-slate-100">
+        <div className="px-4 py-2 bg-white/[0.02] text-[11px] text-slate-400 border-t border-white/5">
           Preview truncated — showing the first {Math.min(file.totalLines, 1500)} of {file.totalLines} lines. Larger files cannot be edited past the preview window.
         </div>
       )}
@@ -983,16 +983,16 @@ export default function AuditEditPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setLocation(`/app/audit/${owner}/${repo}/results/${auditId}`)}
-                className="px-2 h-7 text-sm text-slate-500 hover:text-slate-800"
+                className="px-2 h-7 text-sm text-slate-400 hover:text-slate-100"
               >
                 <ArrowLeft className="w-4 h-4 mr-1.5" /> Back to report
               </Button>
               <div className="flex items-center gap-2 mt-1 flex-wrap">
-                <div className="w-8 h-8 rounded-md bg-indigo-600 flex items-center justify-center text-xs font-bold text-white">
+                <div className="w-8 h-8 rounded-md bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-xs font-bold text-white">
                   {(repo || owner || "?").slice(0, 2).toUpperCase()}
                 </div>
                 <div className="min-w-0">
-                  <h1 className="text-lg font-bold text-slate-900 truncate">Review &amp; edit fixes — {owner}/{repo}</h1>
+                  <h1 className="text-lg font-bold text-slate-100 truncate">Review &amp; edit fixes — {owner}/{repo}</h1>
                   <p className="text-xs text-slate-500">
                     Branch <span className="font-mono font-semibold">{branch}</span>
                     {isPreviewLoading ? " · loading preview…" : ` · ${paths.length} audited file(s)`}
@@ -1001,13 +1001,13 @@ export default function AuditEditPage() {
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <Button variant="outline" size="sm" onClick={saveDraft} className="border-slate-200 text-slate-600 h-9">
+              <Button variant="outline" size="sm" onClick={saveDraft} className="border-white/10 text-slate-300 hover:bg-white/5 hover:text-white h-9">
                 <Save className="w-4 h-4 mr-1.5" /> Save draft
               </Button>
               <Button
                 onClick={createPR}
                 disabled={isCreating || isPreviewLoading}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-9"
+                className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:opacity-90 transition-opacity text-white font-bold h-9 shadow-lg shadow-indigo-500/20"
               >
                 {isCreating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Zap className="w-4 h-4 mr-2 fill-current" />}
                 Finalize &amp; Create PR
@@ -1016,18 +1016,18 @@ export default function AuditEditPage() {
           </div>
 
           {/* Tabs */}
-          <div className="flex items-center gap-6 mt-4 border-b border-slate-200 text-sm">
+          <div className="flex items-center gap-6 mt-4 border-b border-white/10 text-sm">
             <button
-              className="pb-2 text-slate-500 hover:text-slate-800 font-medium"
+              className="pb-2 text-slate-400 hover:text-slate-100 font-medium"
               onClick={() => setLocation(`/app/audit/${owner}/${repo}/results/${auditId}`)}
             >
               Overview
             </button>
-            <div className="pb-2 border-b-2 border-indigo-600 font-semibold text-slate-900 flex items-center gap-2">
+            <div className="pb-2 border-b-2 border-indigo-500 font-semibold text-slate-100 flex items-center gap-2">
               Files changed
-              <span className="text-[11px] bg-slate-100 rounded px-1.5 py-0.5 font-bold text-slate-600">{paths.length}</span>
+              <span className="text-[11px] bg-white/5 rounded px-1.5 py-0.5 font-bold text-slate-400">{paths.length}</span>
             </div>
-            <span className="pb-2 text-slate-300 cursor-not-allowed" title="Commits appear after the PR is created">
+            <span className="pb-2 text-slate-600 cursor-not-allowed" title="Commits appear after the PR is created">
               Commits
             </span>
           </div>
@@ -1038,13 +1038,13 @@ export default function AuditEditPage() {
               <select
                 value={filter}
                 onChange={(e) => setFilter(e.target.value as typeof filter)}
-                className="h-8 text-xs rounded-lg border border-slate-200 bg-white px-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                className="h-8 text-xs rounded-lg border border-white/10 bg-white/5 text-slate-100 px-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               >
                 <option value="all">All changes</option>
                 <option value="edits">Edits only ({changedPaths.length})</option>
               </select>
               {totalAdded > 0 && (
-                <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-50 px-2 text-[11px]">
+                <Badge className="bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/10 px-2 text-[11px]">
                   +{totalAdded} line(s) added
                 </Badge>
               )}
@@ -1059,10 +1059,10 @@ export default function AuditEditPage() {
         <div className="flex gap-4 px-4 mt-3">
           {/* Sidebar */}
           <aside className="hidden lg:block w-72 shrink-0">
-            <div className="sticky top-6 rounded-xl border border-slate-200 bg-white overflow-hidden">
-              <div className="px-3 py-2.5 flex items-center justify-between border-b border-slate-100">
-                <span className="text-xs font-bold text-slate-700">Lines updated</span>
-                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 rounded-full px-1.5 py-0.5">+{totalAdded}</span>
+            <div className="sticky top-6 rounded-xl border border-white/10 bg-slate-900/60 overflow-hidden">
+              <div className="px-3 py-2.5 flex items-center justify-between border-b border-white/5">
+                <span className="text-xs font-bold text-slate-200">Lines updated</span>
+                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 rounded-full px-1.5 py-0.5">+{totalAdded}</span>
               </div>
               <div className="max-h-[70vh] overflow-auto py-1">
                 {groups.map(([dir, list]) => (
@@ -1078,18 +1078,18 @@ export default function AuditEditPage() {
                         <button
                           key={p}
                           onClick={() => scrollTo(p)}
-                          className={`w-full text-left flex items-center justify-between gap-2 px-1 py-1.5 rounded-md text-xs hover:bg-slate-50 ${
-                            changed ? "text-slate-900" : "text-slate-500"
+                          className={`w-full text-left flex items-center justify-between gap-2 px-1 py-1.5 rounded-md text-xs hover:bg-white/5 ${
+                            changed ? "text-slate-100" : "text-slate-400"
                           }`}
                         >
                           <span
-                            className={`truncate rounded px-1.5 py-0.5 ${changed ? "bg-indigo-50 ring-1 ring-indigo-100" : ""}`}
+                            className={`truncate rounded px-1.5 py-0.5 ${changed ? "bg-indigo-500/10 ring-1 ring-indigo-500/20" : ""}`}
                             title={p}
                           >
                             {name}
                           </span>
                           <span className="flex items-center gap-1.5 shrink-0 font-mono text-[10px] font-bold">
-                            {c.added > 0 && <span className="text-emerald-600">+{c.added}</span>}
+                            {c.added > 0 && <span className="text-emerald-400">+{c.added}</span>}
                             {c.removed > 0 && <span className="text-rose-500">−{c.removed}</span>}
                           </span>
                         </button>
@@ -1112,9 +1112,9 @@ export default function AuditEditPage() {
             )}
 
             {!isPreviewLoading && shownPaths.length === 0 && (
-              <div className="rounded-xl border border-slate-200 bg-white p-12 text-center">
-                <AlertCircle className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-                <p className="text-sm font-semibold text-slate-600">No audited files resolved to a real path.</p>
+              <div className="rounded-xl border border-white/10 bg-slate-900/60 p-12 text-center">
+                <AlertCircle className="w-10 h-10 text-slate-600 mx-auto mb-3" />
+                <p className="text-sm font-semibold text-slate-300">No audited files resolved to a real path.</p>
                 <p className="text-xs text-slate-400 mt-1">
                   Findings without a resolvable file are listed below for manual review — re-run the audit to capture file paths.
                 </p>
@@ -1127,13 +1127,13 @@ export default function AuditEditPage() {
 
             {/* Unlinked findings */}
             {unlinkedItems.length > 0 && (
-              <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-4">
-                <p className="text-xs font-bold text-amber-700 uppercase tracking-wide flex items-center gap-2">
+              <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.06] p-4">
+                <p className="text-xs font-bold text-amber-300 uppercase tracking-wide flex items-center gap-2">
                   <Link2Off className="w-3.5 h-3.5" /> Not linked to a file ({unlinkedItems.length})
                 </p>
                 <ul className="mt-2 space-y-2">
                   {unlinkedItems.map((it) => (
-                    <li key={it.itemId} className="text-xs text-slate-600 flex items-start gap-2">
+                    <li key={it.itemId} className="text-xs text-slate-300 flex items-start gap-2">
                       <AlertCircle className="w-3.5 h-3.5 mt-0.5 text-amber-500 shrink-0" />
                       <span className="flex-1">{it.label}</span>
                       <Badge variant="outline" className={`text-[9px] shrink-0 ${severityBadgeClass(it.severity)}`}>
@@ -1142,7 +1142,7 @@ export default function AuditEditPage() {
                     </li>
                   ))}
                 </ul>
-                <p className="text-[11px] text-amber-600/80 mt-2">
+                <p className="text-[11px] text-amber-400/70 mt-2">
                   These findings had no resolvable repository path — review them manually on GitHub.
                 </p>
               </div>
@@ -1155,7 +1155,7 @@ export default function AuditEditPage() {
           <Button
             onClick={createPR}
             disabled={isCreating}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 h-12 text-base font-bold rounded-full border-4 border-white shadow-2xl shadow-indigo-500/25 disabled:opacity-60"
+            className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:opacity-90 transition-opacity text-white px-8 h-12 text-base font-bold rounded-full border-4 border-slate-950 shadow-2xl shadow-indigo-500/25 disabled:opacity-60"
           >
             {isCreating ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Check className="w-5 h-5 mr-2" />}
             Create PR with {changedPaths.length} edited file{changedPaths.length === 1 ? "" : "s"}

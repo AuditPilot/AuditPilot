@@ -27,8 +27,8 @@ export function ProtectedRoute({ path, component: Component }: ProtectedRoutePro
       {(params) => {
         if (isLoading) {
           return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-50">
-              <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+            <div className="min-h-screen flex items-center justify-center bg-slate-950">
+              <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
             </div>
           );
         }

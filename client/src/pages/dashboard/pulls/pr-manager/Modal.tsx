@@ -45,12 +45,12 @@ export default function Modal({ open, onClose, title, subtitle, children, footer
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.97, y: 8 }}
             transition={{ type: "spring", stiffness: 380, damping: 30 }}
-            className="w-full max-w-5xl max-h-[88vh] flex flex-col rounded-2xl border border-gray-700 bg-[#121212] shadow-2xl shadow-black/60 overflow-hidden"
+            className="w-full max-w-5xl max-h-[88vh] flex flex-col rounded-2xl border border-white/10 bg-slate-900/70 shadow-2xl shadow-black/60 overflow-hidden"
             role="dialog"
             aria-modal="true"
           >
             {/* Title bar */}
-            <div className="flex items-start justify-between gap-4 px-6 py-4 border-b border-gray-700/70 bg-white/[0.02]">
+            <div className="flex items-start justify-between gap-4 px-6 py-4 border-b border-white/10 bg-white/[0.02]">
               <div className="min-w-0">
                 <div className="text-sm font-bold text-slate-100 truncate">{title}</div>
                 {subtitle && <div className="mt-0.5 text-xs text-slate-500">{subtitle}</div>}
@@ -68,7 +68,7 @@ export default function Modal({ open, onClose, title, subtitle, children, footer
             <div className="flex-1 overflow-y-auto">{children}</div>
 
             {footer && (
-              <div className="px-6 py-3 border-t border-gray-700/70 bg-white/[0.02] flex items-center justify-end gap-3">
+              <div className="px-6 py-3 border-t border-white/10 bg-white/[0.02] flex items-center justify-end gap-3">
                 {footer}
               </div>
             )}

@@ -10,7 +10,7 @@ function LineBadge({ change }: { change: HistoryChange }) {
     const first = Math.min(...nums);
     const last = Math.max(...nums);
     return (
-      <span className="text-[10px] font-mono font-bold text-slate-300 bg-white/[0.06] border border-gray-700 rounded-full px-2 py-0.5">
+      <span className="text-[10px] font-mono font-bold text-slate-300 bg-white/[0.06] border border-white/10 rounded-full px-2 py-0.5">
         {first === last ? `L${first}` : `L${first}–L${last}`}
       </span>
     );
@@ -18,7 +18,7 @@ function LineBadge({ change }: { change: HistoryChange }) {
   const oldN = splitLines(change.oldCode).length;
   const newN = splitLines(change.newCode).length;
   return (
-    <span className="text-[10px] font-mono font-bold text-slate-300 bg-white/[0.06] border border-gray-700 rounded-full px-2 py-0.5">
+    <span className="text-[10px] font-mono font-bold text-slate-300 bg-white/[0.06] border border-white/10 rounded-full px-2 py-0.5">
       −{oldN} · +{newN} lines
     </span>
   );
@@ -30,9 +30,9 @@ function DiffFile({ change }: { change: HistoryChange }) {
   const rows = Math.max(oldLines.length, newLines.length);
 
   return (
-    <div className="rounded-xl border border-gray-700/70 overflow-hidden">
+    <div className="rounded-xl border border-white/10 overflow-hidden">
       {/* File header */}
-      <div className="flex items-center justify-between gap-3 px-4 py-2 bg-white/[0.03] border-b border-gray-700/60">
+      <div className="flex items-center justify-between gap-3 px-4 py-2 bg-white/[0.03] border-b border-white/5">
         <span className="flex items-center gap-1.5 min-w-0 font-mono text-[13px]">
           {change.fileName.split("/").map((part, i, arr) => (
             <span key={i} className="truncate">
@@ -95,12 +95,12 @@ export default function AuditDiffViewer({ audit }: { audit: HistoryRecord }) {
       {/* PR context */}
       <div className="flex items-center gap-2 flex-wrap text-xs">
         {audit.prId ? (
-          <span className="flex items-center gap-1.5 rounded-full border border-gray-700 bg-white/[0.03] px-3 py-1 text-slate-300">
+          <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-slate-300">
             <GitPullRequest className="w-3.5 h-3.5 text-indigo-300" />
             Pull Request #{audit.prId}
           </span>
         ) : (
-          <span className="flex items-center gap-1.5 rounded-full border border-gray-700 bg-white/[0.03] px-3 py-1 text-slate-400">
+          <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-slate-400">
             <AlertCircle className="w-3.5 h-3.5" />
             not PR-linked
           </span>
@@ -120,7 +120,7 @@ export default function AuditDiffViewer({ audit }: { audit: HistoryRecord }) {
 
       {/* Changes */}
       {changes.length === 0 ? (
-        <p className="rounded-xl border border-gray-700/70 bg-white/[0.02] px-4 py-6 text-center text-xs text-slate-500">
+        <p className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-6 text-center text-xs text-slate-500">
           No code changes were recorded for this entry.
         </p>
       ) : (

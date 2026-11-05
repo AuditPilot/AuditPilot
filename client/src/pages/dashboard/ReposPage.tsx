@@ -35,7 +35,7 @@ export default function ReposPage() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+          <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
         </div>
       </DashboardLayout>
     );
@@ -46,8 +46,8 @@ export default function ReposPage() {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         {!repos || repos.length === 0 ? (
           <Card className="p-12 text-center border-dashed">
-            <Github className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-slate-900">No Repositories Found</h3>
+            <Github className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-slate-100">No Repositories Found</h3>
             <p className="text-slate-500 mb-6">Make sure you have repositories in your GitHub account.</p>
           </Card>
         ) : (
@@ -56,30 +56,30 @@ export default function ReposPage() {
               <div
                 key={repo.id}
                 onClick={() => handleSelect(repo)}
-                className="group bg-white p-6 rounded-xl border border-slate-200 hover:border-indigo-300 hover:shadow-lg hover:shadow-indigo-500/10 cursor-pointer transition-all duration-200"
+                className="group bg-slate-900/60 backdrop-blur-sm p-6 rounded-xl border border-white/10 hover:border-indigo-500/40 hover:shadow-lg hover:shadow-indigo-500/10 cursor-pointer transition-all duration-200"
               >
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-slate-100 rounded-lg group-hover:bg-indigo-50 transition-colors">
-                      <Github className="w-5 h-5 text-slate-700 group-hover:text-indigo-600" />
+                    <div className="p-2 bg-white/5 rounded-lg group-hover:bg-indigo-500/10 transition-colors">
+                      <Github className="w-5 h-5 text-slate-300 group-hover:text-indigo-400" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-slate-900 truncate max-w-[180px]">{repo.name}</h3>
+                      <h3 className="font-semibold text-slate-100 truncate max-w-[180px]">{repo.name}</h3>
                       <div className="text-xs text-slate-500 flex items-center gap-2 mt-1">
                         <span>{repo.language || "Unknown"}</span>
-                        <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+                        <span className="w-1 h-1 bg-slate-600 rounded-full"></span>
                         <span>Updated {new Date(repo.updated_at).toLocaleDateString()}</span>
                       </div>
                     </div>
                   </div>
-                  <Badge variant="secondary" className="bg-slate-100 text-slate-600 group-hover:bg-indigo-100 group-hover:text-indigo-700">{repo.stargazers_count} ★</Badge>
+                  <Badge variant="secondary" className="bg-white/5 text-slate-300 group-hover:bg-indigo-500/10 group-hover:text-indigo-300">{repo.stargazers_count} ★</Badge>
                 </div>
                 <div className="mt-4 flex items-center justify-between">
                   <div className="text-xs text-slate-400">{repo.default_branch} branch</div>
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 -mr-2"
+                    className="text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 -mr-2"
                   >
                     Run Audit <ArrowRight className="w-4 h-4 ml-1" />
                   </Button>

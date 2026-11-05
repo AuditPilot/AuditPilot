@@ -48,8 +48,8 @@ export default function Sidebar({
   return (
     <aside className="w-full lg:w-[340px] shrink-0 flex flex-col gap-5">
       {/* Saved drafts */}
-      <div className="rounded-2xl border border-gray-700/70 bg-[#121212] overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700/60">
+      <div className="rounded-2xl border border-white/10 bg-slate-900/60 overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
           <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-slate-400">
             <FileCode2 className="w-3.5 h-3.5 text-indigo-400" /> Saved Drafts
             <span className="text-[10px] font-bold text-slate-500 bg-white/[0.06] rounded-full px-1.5 py-0.5">
@@ -110,8 +110,8 @@ export default function Sidebar({
       </div>
 
       {/* Audit history */}
-      <div className="rounded-2xl border border-gray-700/70 bg-[#121212] overflow-hidden">
-        <div className="flex items-center px-4 py-3 border-b border-gray-700/60">
+      <div className="rounded-2xl border border-white/10 bg-slate-900/60 overflow-hidden">
+        <div className="flex items-center px-4 py-3 border-b border-white/5">
           <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-slate-400">
             <History className="w-3.5 h-3.5 text-violet-400" /> Audit History
             <span className="text-[10px] font-bold text-slate-500 bg-white/[0.06] rounded-full px-1.5 py-0.5">

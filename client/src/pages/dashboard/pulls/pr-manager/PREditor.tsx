@@ -46,9 +46,9 @@ export default function PREditor({
     });
 
   return (
-    <section className="flex-1 min-w-0 rounded-2xl border border-gray-700/70 bg-[#121212] overflow-hidden flex flex-col">
+    <section className="flex-1 min-w-0 rounded-2xl border border-white/10 bg-slate-900/60 overflow-hidden flex flex-col">
       {/* Header */}
-      <div className="px-6 pt-5 pb-4 border-b border-gray-700/60">
+      <div className="px-6 pt-5 pb-4 border-b border-white/5">
         <div className="flex items-center gap-2">
           <span className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-300">
             <GitPullRequest className="w-4 h-4" />
@@ -77,7 +77,7 @@ export default function PREditor({
               onChange={(e) => onChange({ [key]: e.target.value } as Partial<DraftRecord>)}
               placeholder={key === "owner" ? "owner" : key === "repo" ? "repo" : "base branch"}
               spellCheck={false}
-              className="h-9 rounded-lg bg-[#0d0d0e] border border-gray-700 px-3 text-xs font-mono text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20 transition"
+              className="h-9 rounded-lg bg-white/[0.03] border border-white/10 px-3 text-xs font-mono text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20 transition"
             />
           ))}
         </div>
@@ -92,7 +92,7 @@ export default function PREditor({
             value={draft.title}
             onChange={(e) => onChange({ title: e.target.value })}
             placeholder="Add a title — e.g. Fix hardcoded Binance credentials"
-            className="mt-1.5 w-full h-10 rounded-xl bg-[#0d0d0e] border border-gray-700 px-4 text-sm font-semibold text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20 transition"
+            className="mt-1.5 w-full h-10 rounded-xl bg-white/[0.03] border border-white/10 px-4 text-sm font-semibold text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20 transition"
           />
         </div>
 
@@ -104,13 +104,13 @@ export default function PREditor({
             onChange={(e) => onChange({ description: e.target.value })}
             rows={7}
             placeholder="Describe the changes, the risks addressed, and how to review them…"
-            className="mt-1.5 w-full rounded-xl bg-[#0d0d0e] border border-gray-700 px-4 py-3 text-sm leading-relaxed text-slate-200 placeholder:text-slate-600 resize-y focus:outline-none focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20 transition"
+            className="mt-1.5 w-full rounded-xl bg-white/[0.03] border border-white/10 px-4 py-3 text-sm leading-relaxed text-slate-200 placeholder:text-slate-600 resize-y focus:outline-none focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20 transition"
           />
         </div>
 
         {/* Files changed */}
-        <div className="rounded-xl border border-gray-700/70 overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-2.5 bg-white/[0.02] border-b border-gray-700/60">
+        <div className="rounded-xl border border-white/10 overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-2.5 bg-white/[0.02] border-b border-white/5">
             <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-slate-400">
               <FileCode2 className="w-3.5 h-3.5" /> Files changed
               <span className="text-[10px] bg-white/[0.06] rounded-full px-1.5 py-0.5 text-slate-400">{files.length}</span>
@@ -136,7 +136,7 @@ export default function PREditor({
           {files.map((f, i) => {
             const isOpen = openFile === i;
             return (
-              <div key={i} className="border-b border-gray-700/50 last:border-b-0">
+              <div key={i} className="border-b border-white/[0.07] last:border-b-0">
                 <div className="flex items-center gap-2 px-3 py-2">
                   <button
                     onClick={() => setOpenFile(isOpen ? null : i)}
@@ -164,7 +164,7 @@ export default function PREditor({
                       onChange={(e) => patchFile(i, { fileName: e.target.value })}
                       placeholder="src/path/file.ts"
                       spellCheck={false}
-                      className="w-full h-8 rounded-lg bg-[#0d0d0e] border border-gray-700 px-3 text-xs font-mono text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/60"
+                      className="w-full h-8 rounded-lg bg-white/[0.03] border border-white/10 px-3 text-xs font-mono text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/60"
                     />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                       <div>
@@ -174,7 +174,7 @@ export default function PREditor({
                           onChange={(e) => patchFile(i, { oldCode: e.target.value })}
                           rows={4}
                           spellCheck={false}
-                          className="mt-1 w-full rounded-lg bg-[#0d0d0e] border border-rose-500/20 px-3 py-2 font-mono text-[11px] text-rose-200/90 placeholder:text-slate-600 focus:outline-none focus:border-rose-500/50 resize-y"
+                          className="mt-1 w-full rounded-lg bg-white/[0.03] border border-rose-500/20 px-3 py-2 font-mono text-[11px] text-rose-200/90 placeholder:text-slate-600 focus:outline-none focus:border-rose-500/50 resize-y"
                         />
                       </div>
                       <div>
@@ -184,7 +184,7 @@ export default function PREditor({
                           onChange={(e) => patchFile(i, { newCode: e.target.value, status: "edited" })}
                           rows={4}
                           spellCheck={false}
-                          className="mt-1 w-full rounded-lg bg-[#0d0d0e] border border-emerald-500/20 px-3 py-2 font-mono text-[11px] text-emerald-200/90 placeholder:text-slate-600 focus:outline-none focus:border-emerald-500/50 resize-y"
+                          className="mt-1 w-full rounded-lg bg-white/[0.03] border border-emerald-500/20 px-3 py-2 font-mono text-[11px] text-emerald-200/90 placeholder:text-slate-600 focus:outline-none focus:border-emerald-500/50 resize-y"
                         />
                       </div>
                     </div>
@@ -197,11 +197,11 @@ export default function PREditor({
       </div>
 
       {/* Action bar */}
-      <div className="px-6 py-4 border-t border-gray-700/60 bg-white/[0.02] flex items-center justify-between gap-3 flex-wrap">
+      <div className="px-6 py-4 border-t border-white/5 bg-white/[0.02] flex items-center justify-between gap-3 flex-wrap">
         <button
           onClick={onSaveDraft}
           disabled={saving || !draft.title.trim()}
-          className="flex items-center gap-2 h-10 px-4 rounded-xl border border-gray-700 text-sm font-semibold text-slate-200 hover:bg-white/[0.05] hover:border-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition"
+          className="flex items-center gap-2 h-10 px-4 rounded-xl border border-white/10 text-sm font-semibold text-slate-200 hover:bg-white/[0.05] hover:border-white/20 disabled:opacity-40 disabled:cursor-not-allowed transition"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Save Draft
@@ -213,7 +213,7 @@ export default function PREditor({
         <button
           onClick={onFinalize}
           disabled={finalizing || !draft.title.trim()}
-          className="flex items-center gap-2 h-10 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold shadow-lg shadow-indigo-950/60 disabled:opacity-40 disabled:cursor-not-allowed transition"
+          className="flex items-center gap-2 h-10 px-5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:opacity-90 text-white text-sm font-bold shadow-lg shadow-indigo-950/60 disabled:opacity-40 disabled:cursor-not-allowed transition"
         >
           {finalizing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4 fill-current" />}
           Finalize &amp; Create PR
