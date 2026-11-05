@@ -9,7 +9,7 @@ describe("parseEnv", () => {
   it("applies defaults in development", () => {
     const r = parseEnv(base);
     expect(r.ok).toBe(true);
-    expect(r.env!.PORT).toBe(5000);
+    expect(r.env!.PORT).toBe(5002);
     expect(r.env!.AI_INTEGRATIONS_OPENAI_BASE_URL).toBe("https://openrouter.ai/api/v1");
     expect(r.env!.CLIENT_ORIGIN).toBe("http://localhost:5000,http://localhost:5173");
     expect(r.env!.COOKIE_SAMESITE).toBe("lax"); // split deploys switch to "none"

@@ -9,7 +9,7 @@ npm ci
 npm run dev
 ```
 
-Vite serves the app at `http://localhost:5000` and proxies `/api` to `http://localhost:8080`. Start the API separately from `D:\AuditPilot-API`.
+Vite serves the app at `http://localhost:5000` and proxies `/api` to `http://localhost:5002` by default. Start the API separately from `D:\AuditPilot-API`. Set `VITE_API_PROXY` if the API runs on a different port.
 
 ## Build and run the frontend container
 

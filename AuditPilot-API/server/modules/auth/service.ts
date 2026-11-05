@@ -99,7 +99,7 @@ export async function syncUser(profile: GitHubProfile, rawToken: string): Promis
       $unset: { accessToken: 1 },
       lastLogin: new Date(),
     },
-    { upsert: true, new: true, setDefaultsOnInsert: true },
+    { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
   );
   return user;
 }

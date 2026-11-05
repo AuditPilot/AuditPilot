@@ -5,18 +5,22 @@ Standalone Express API project, separated from the frontend in `D:\AuditPilot`.
 ## Local development
 
 ```powershell
-Copy-Item .env.example .env
+Copy-Item ..\AuditPilot\.env.example .env
 npm ci
 npm run dev
 ```
 
-The API listens on port 8080 by default and expects MongoDB at `MONGODB_URI`.
+The API listens on port 5002 by default and expects MongoDB at
+`mongodb://localhost:27017/auditpilot`. Add a `.env` file in this directory to
+override settings or configure integrations such as GitHub OAuth. Set
+`APP_URL` to the frontend's origin (for example, `http://localhost:5000`) so
+GitHub sign-in returns to the web app.
 
 ## Docker
 
 ```powershell
-Copy-Item .env.example .env
-# Set secure JWT_SECRET and ENCRYPTION_KEY values in .env
+# Create .env from ..\AuditPilot\.env.example, then set PORT=8080,
+# MONGODB_URI=mongodb://mongo:27017/auditpilot, JWT_SECRET, and ENCRYPTION_KEY.
 docker compose up --build -d
 ```
 

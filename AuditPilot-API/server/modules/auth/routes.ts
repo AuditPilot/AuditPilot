@@ -2,7 +2,7 @@ import { Router, type Request, Response } from "express";
 import { randomBytes } from "node:crypto";
 import { safeEqual } from "../../lib/crypto";
 import jwt from "jsonwebtoken";
-import { ENV } from "../../config/env";
+import { CLIENT_ORIGINS, ENV, isDev } from "../../config/env";
 import { logger } from "../../config/logger";
 import { User, type UserDocument } from "../../models/User";
 import { recordAuditLog } from "../../middleware/auditLog";
@@ -65,7 +65,13 @@ authRouter.get("/auth/github/callback", async (req: Request, res: Response) => {
     setAuthCookie(res, jwtToken);
 
     recordAuditLog(req, { action: "auth.login", targetType: "user", targetId: String(user._id), meta: { provider: "github" } });
-    return res.redirect("/app");
+    const localFrontend = "http://localhost:5000";
+    const frontendUrl =
+      ENV.APP_URL ||
+      (isDev && CLIENT_ORIGINS.includes(localFrontend)
+        ? localFrontend
+        : CLIENT_ORIGINS[0]);
+    return res.redirect(new URL("/app", frontendUrl).toString());
   } catch (err) {
     logger.error({ err: (err as Error).message }, "github auth flow failed");
     return res.status(500).json({ message: "Internal server error during auth" });

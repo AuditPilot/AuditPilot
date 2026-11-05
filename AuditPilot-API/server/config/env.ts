@@ -33,7 +33,7 @@ const envSchema = z.object({
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),
-  PORT: z.coerce.number().int().positive().default(5000),
+  PORT: z.coerce.number().int().positive().default(5002),
   LOG_LEVEL: z
     .enum(["fatal", "error", "warn", "info", "debug", "trace"])
     .default("info"),
@@ -229,7 +229,6 @@ export const isTest = parsed.NODE_ENV === "test";
 export const CLIENT_ORIGINS: string[] = parsed.CLIENT_ORIGIN.split(",")
   .map(s => s.trim())
   .filter(Boolean);
-
 
 
 
