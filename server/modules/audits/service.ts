@@ -512,11 +512,60 @@ export async function checkBranchExists(owner: string, repo: string, ref: string
   return refData.object.sha;
 }
 
+/**
+ * Derives the fix-branch suffix from a PR title so the branch itself is
+ * descriptive (`auditpilot-fix-security-patch-for-voting` instead of
+ * `auditpilot-fix-1772297270476`). Anything outside [a-z0-9] collapses to a
+ * single dash; a title with no usable characters falls back to "fixes".
+ */
+export function slugifyBranchTitle(title: string): string {
+  const slug = (title || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60)
+    .replace(/-+$/g, "");
+  return slug || "fixes";
+}
+
+async function refExists(owner: string, repo: string, ref: string, gh: GitHubClient): Promise<boolean> {
+  try {
+    await checkBranchExists(owner, repo, ref, gh);
+    return true;
+  } catch (err) {
+    // A genuine 404 means the ref is free; anything else is a real failure we
+    // must not swallow (rate limits, network errors…).
+    if (err instanceof GitHubApiError && err.status === 404) return false;
+    throw err;
+  }
+}
+
+/**
+ * `auditpilot-fix-<slug(title)>` with collision handling — an already-existing
+ * branch (e.g. the same title reused) gets `-2`, `-3`, … appended so branch
+ * creation can never hard-fail on a duplicate name.
+ */
+export async function uniqueFixBranchName(owner: string, repo: string, prTitle: string, gh: GitHubClient): Promise<string> {
+  const base = `auditpilot-fix-${slugifyBranchTitle(prTitle)}`;
+  if (!(await refExists(owner, repo, base, gh))) return base;
+  for (let n = 2; n <= 25; n++) {
+    const candidate = `${base}-${n}`;
+    if (!(await refExists(owner, repo, candidate, gh))) return candidate;
+  }
+  return `${base}-${Date.now()}`;
+}
+
 export interface ApplyFixInput {
   owner: string;
   repo: string;
   targetBranch: string;
   issues: AuditIssue[];
+  /** PR title — ALSO seeds the branch name (`auditpilot-fix-<slug(title)>`). */
+  title?: string;
+  /** PR description composed in the review UI; falls back to a stats summary. */
+  description?: string;
   gh: GitHubClient;
 }
 
@@ -672,11 +721,14 @@ export async function buildFixPreview(input: {
 }
 
 export async function applyFixesAndCreatePR(input: ApplyFixInput): Promise<ApplyFixResult> {
-  const { owner, repo, targetBranch, issues, gh } = input;
+  const { owner, repo, targetBranch, issues, title, description, gh } = input;
 
   const baseSha = await checkBranchExists(owner, repo, targetBranch, gh);
 
-  const newBranchName = `auditpilot-fix-${Date.now()}`;
+  // Branch is named AFTER the PR title so every GitHub side-tab is readable
+  // (`auditpilot-fix-<slug(title)>` instead of a timestamp).
+  const prTitle = title?.trim() || "AuditPilot: Fix security and performance issues";
+  const newBranchName = await uniqueFixBranchName(owner, repo, prTitle, gh);
   await gh.post(`/repos/${owner}/${repo}/git/refs`, {
     ref: `refs/heads/${newBranchName}`,
     sha: baseSha,
@@ -752,15 +804,20 @@ export async function applyFixesAndCreatePR(input: ApplyFixInput): Promise<Apply
     );
   }
 
+  const stats = [
+    `**Applied:** ${appliedIssues} issue(s) across ${modifiedFilesCount} file(s)`,
+    ...(skipped.length
+      ? ["", `**Skipped (${skipped.length}):**`, ...skipped.slice(0, 15).map(s => `- \`${s.file}\` — ${s.reason}`)]
+      : []),
+  ];
   const createdPR = await gh.post<{ html_url: string; number: number }>(`/repos/${owner}/${repo}/pulls`, {
-    title: "AuditPilot: Fix security and performance issues",
+    title: prTitle,
     body: [
-      "This PR applies automated fixes for issues identified during the AI audit.",
+      description?.trim() || "This PR applies automated fixes for issues identified during the AI audit.",
       "",
-      `**Applied:** ${appliedIssues} issue(s) across ${modifiedFilesCount} file(s)`,
-      ...(skipped.length
-        ? ["", `**Skipped (${skipped.length}):**`, ...skipped.slice(0, 15).map(s => `- \`${s.file}\` — ${s.reason}`)]
-        : []),
+      "---",
+      "",
+      ...stats,
     ].join("\n"),
     head: newBranchName,
     base: targetBranch,
@@ -782,8 +839,10 @@ export interface ApplyContentsInput {
   targetBranch: string;
   /** path → FULL new file content (UTF-8) produced by the review/edit UI. */
   files: Record<string, string>;
-  /** Optional PR title override. */
+  /** PR title — ALSO seeds the branch name (`auditpilot-fix-<slug(title)>`). */
   title?: string;
+  /** PR description composed in the review UI; falls back to a stats summary. */
+  description?: string;
   gh: GitHubClient;
 }
 
@@ -794,7 +853,7 @@ export interface ApplyContentsInput {
  * deletions and rewrites are all preserved verbatim.
  */
 export async function applyEditedContentsAndCreatePR(input: ApplyContentsInput): Promise<ApplyFixResult> {
-  const { owner, repo, targetBranch, files, gh } = input;
+  const { owner, repo, targetBranch, files, title, description, gh } = input;
 
   const entries = Object.entries(files).filter(([path]) => path && typeof files[path] === "string");
   if (entries.length === 0) {
@@ -803,7 +862,10 @@ export async function applyEditedContentsAndCreatePR(input: ApplyContentsInput):
 
   const baseSha = await checkBranchExists(owner, repo, targetBranch, gh);
 
-  const newBranchName = `auditpilot-fix-${Date.now()}`;
+  // Branch is named AFTER the PR title so it is identifiable at a glance
+  // (`auditpilot-fix-<slug(title)>` instead of `auditpilot-fix-<timestamp>`).
+  const prTitle = title?.trim() || "AuditPilot: Apply reviewed code fixes";
+  const newBranchName = await uniqueFixBranchName(owner, repo, prTitle, gh);
   await gh.post(`/repos/${owner}/${repo}/git/refs`, {
     ref: `refs/heads/${newBranchName}`,
     sha: baseSha,
@@ -835,15 +897,20 @@ export async function applyEditedContentsAndCreatePR(input: ApplyContentsInput):
     );
   }
 
+  const stats = [
+    `**Updated:** ${committed} file(s)`,
+    ...(skipped.length
+      ? ["", `**Skipped (${skipped.length}):**`, ...skipped.slice(0, 15).map(s => `- \`${s.file}\` — ${s.reason}`)]
+      : []),
+  ];
   const createdPR = await gh.post<{ html_url: string; number: number }>(`/repos/${owner}/${repo}/pulls`, {
-    title: input.title ?? "AuditPilot: Apply reviewed code fixes",
+    title: prTitle,
     body: [
-      "This PR applies code fixes reviewed and edited in AuditPilot.",
+      description?.trim() || "This PR applies code fixes reviewed and edited in AuditPilot.",
       "",
-      `**Updated:** ${committed} file(s)`,
-      ...(skipped.length
-        ? ["", `**Skipped (${skipped.length}):**`, ...skipped.slice(0, 15).map(s => `- \`${s.file}\` — ${s.reason}`)]
-        : []),
+      "---",
+      "",
+      ...stats,
     ].join("\n"),
     head: newBranchName,
     base: targetBranch,

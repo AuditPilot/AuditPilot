@@ -148,11 +148,16 @@ export const api = {
    * Commits user-reviewed FULL file contents (from the inline diff editor) to
    * a fresh branch and opens a pull request server-side.
    */
-  async fixContents(owner: string, repo: string, files: Record<string, string>, targetBranch: string, title?: string) {
+  async fixContents(owner: string, repo: string, files: Record<string, string>, targetBranch: string, title?: string, description?: string) {
     const res = await fetch(`${API_BASE}/api/repos/${owner}/${repo}/fix-contents`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ files, targetBranch, ...(title ? { title } : {}) }),
+      body: JSON.stringify({
+        files,
+        targetBranch,
+        ...(title ? { title } : {}),
+        ...(description ? { description } : {}),
+      }),
       ...cred,
     });
     if (!res.ok) {
@@ -167,11 +172,23 @@ export const api = {
    * (fresh branch: one commit per file). Used by the PR manager's
    * "Finalize & Create PR" for drafts that store snippet pairs.
    */
-  async repoFix(owner: string, repo: string, issues: Array<{ file: string; old_code: string; new_code: string }>, targetBranch: string) {
+  async repoFix(
+    owner: string,
+    repo: string,
+    issues: Array<{ file: string; old_code: string; new_code: string }>,
+    targetBranch: string,
+    title?: string,
+    description?: string,
+  ) {
     const res = await fetch(`${API_BASE}/api/repos/${owner}/${repo}/fix`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ issues, targetBranch }),
+      body: JSON.stringify({
+        issues,
+        targetBranch,
+        ...(title ? { title } : {}),
+        ...(description ? { description } : {}),
+      }),
       ...cred,
     });
     if (!res.ok) {

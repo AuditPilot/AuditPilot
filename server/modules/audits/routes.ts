@@ -142,10 +142,11 @@ auditsRouter.get("/audits/:id/fix-preview", requireAuth, async (req, res) => {
 auditsRouter.post("/repos/:owner/:repo/fix-contents", requireAuth, async (req: Request, res: Response) => {
   const owner = String(req.params.owner);
   const repo = String(req.params.repo);
-  const { files, targetBranch, title } = (req.body ?? {}) as {
+  const { files, targetBranch, title, description } = (req.body ?? {}) as {
     files?: Record<string, string>;
     targetBranch?: string;
     title?: string;
+    description?: string;
   };
   const gh = githubClientFromToken(tokenOf(req));
 
@@ -159,6 +160,7 @@ auditsRouter.post("/repos/:owner/:repo/fix-contents", requireAuth, async (req: R
       targetBranch,
       files,
       title: typeof title === "string" && title.trim() ? title : undefined,
+      description: typeof description === "string" && description.trim() ? description : undefined,
       gh,
     });
     recordAuditLog(req, {
@@ -267,7 +269,12 @@ auditsRouter.delete("/audit-items/:id", requireAuth, async (req, res) => {
 auditsRouter.post("/repos/:owner/:repo/fix", requireAuth, async (req: Request, res: Response) => {
   const owner = String(req.params.owner);
   const repo = String(req.params.repo);
-  const { issues, targetBranch } = (req.body ?? {}) as { issues?: unknown[]; targetBranch?: string };
+  const { issues, targetBranch, title, description } = (req.body ?? {}) as {
+    issues?: unknown[];
+    targetBranch?: string;
+    title?: string;
+    description?: string;
+  };
   const gh = githubClientFromToken(tokenOf(req));
 
   try {
@@ -279,6 +286,8 @@ auditsRouter.post("/repos/:owner/:repo/fix", requireAuth, async (req: Request, r
       repo,
       targetBranch,
       issues: issues as never[],
+      title: typeof title === "string" && title.trim() ? title : undefined,
+      description: typeof description === "string" && description.trim() ? description : undefined,
       gh,
     });
     recordAuditLog(req, {

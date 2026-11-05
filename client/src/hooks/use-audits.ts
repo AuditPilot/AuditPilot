@@ -179,11 +179,23 @@ export function useApplyFix() {
     const { toast } = useToast();
 
     return useMutation({
-        mutationFn: async ({ owner, repo, issues, targetBranch }: { owner: string; repo: string; issues: any[]; targetBranch: string }) => {
+        mutationFn: async ({ owner, repo, issues, targetBranch, title, description }: {
+            owner: string;
+            repo: string;
+            issues: any[];
+            targetBranch: string;
+            title?: string;
+            description?: string;
+        }) => {
             const res = await fetch(`${API_BASE}/api/repos/${owner}/${repo}/fix`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ issues, targetBranch }),
+                body: JSON.stringify({
+                    issues,
+                    targetBranch,
+                    ...(title ? { title } : {}),
+                    ...(description ? { description } : {}),
+                }),
                 credentials: "include"
             });
             if (!res.ok) {
@@ -240,14 +252,15 @@ export function useApplyFixContents() {
     const { toast } = useToast();
 
     return useMutation({
-        mutationFn: async ({ owner, repo, files, targetBranch, title }: {
+        mutationFn: async ({ owner, repo, files, targetBranch, title, description }: {
             owner: string;
             repo: string;
             files: Record<string, string>;
             targetBranch: string;
             title?: string;
+            description?: string;
         }) => {
-            return api.fixContents(owner, repo, files, targetBranch, title);
+            return api.fixContents(owner, repo, files, targetBranch, title, description);
         },
         onSuccess: (data: any) => {
             toast({

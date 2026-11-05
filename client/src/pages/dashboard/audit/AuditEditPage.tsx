@@ -22,8 +22,10 @@ import {
   useApplyFixContents,
   useFixPreview,
 } from "@/hooks/use-audits";
+import { useAuthStatus } from "@/hooks/use-repos";
 import { useLocation, useParams } from "wouter";
 import DashboardLayout from "../DashboardLayout";
+import PRComposer, { composeBranchSlug } from "./PRComposer";
 import { useToast } from "@/hooks/use-toast";
 
 // ---------------------------------------------------------------------------
@@ -82,6 +84,11 @@ const CONTEXT_PAD = 8;
 
 function draftKey(auditId: string) {
   return `auditfix-edit:${auditId}`;
+}
+
+/** Local persistence of the PR composer (title + description) until creation. */
+function composeKey(auditId: string) {
+  return `pr-compose:${auditId}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -636,6 +643,7 @@ export default function AuditEditPage() {
   const updateItemMutation = useUpdateAuditItem(auditId);
   const applyContentsMutation = useApplyFixContents();
   const { toast } = useToast();
+  const { data: authStatus } = useAuthStatus();
 
   const [files, setFiles] = useState<Record<string, FileState>>({});
   const [filter, setFilter] = useState<"all" | "edits">("all");
@@ -644,7 +652,77 @@ export default function AuditEditPage() {
   /** Signature of the preview build the current `files` were built from. */
   const builtKeyRef = useRef<string | null>(null);
 
+  // ---- PR composer state (Overview tab — GitHub-style) ------------------------
+  // Title + description are composed here, kept in localStorage until the user
+  // creates the PR (composer button OR the sticky "Create PR…" pill both bind them).
+  const [tab, setTab] = useState<"overview" | "files">("overview");
+  const [prTitle, setPrTitle] = useState("");
+  const [prDescription, setPrDescription] = useState("");
+  const composerHydrated = useRef(false);
+
   const branch = ((preview?.branch as string) || (audit as unknown as { branch?: string })?.branch || "main") as string;
+
+  // ---- Composer defaults, per-audit -------------------------------------------
+  const defaultPrTitle = useMemo(
+    () => `Security & performance patch for ${repo || "repository"}`,
+    [repo],
+  );
+
+  const defaultPrDescription = useMemo(() => {
+    const items = (audit?.items ?? []) as any[];
+    if (!items.length) {
+      return `Automated AuditPilot audit fixes for **${owner}/${repo || "this repository"}**.`;
+    }
+    return [
+      "## What this PR does",
+      "",
+      `Applies fixes reported by the AuditPilot audit of **${owner}/${repo}** — ${items.length} finding(s).`,
+      "",
+      "## Findings",
+      ...items.slice(0, 10).map((it: any) => {
+        const file = it.value ? ` (\`${it.value}\`)` : "";
+        return `- **${it.severity || "medium"}** — ${it.label || "Issue"}${file}`;
+      }),
+      ...(items.length > 10 ? [`- …and ${items.length - 10} more`] : []),
+      "",
+      "_Generated with AuditPilot._",
+    ].join("\n");
+  }, [audit, owner, repo]);
+
+  // The branch that will be created — derived live from the PR title so users
+  // can see `auditpilot-fix-<title>` before anything is pushed to GitHub.
+  const headBranch = useMemo(
+    () => `auditpilot-fix-${composeBranchSlug(prTitle.trim() || defaultPrTitle)}`,
+    [prTitle, defaultPrTitle],
+  );
+
+  // Hydrate once per mount: existing local draft wins, else audit-derived defaults.
+  useEffect(() => {
+    if (composerHydrated.current || !audit) return;
+    composerHydrated.current = true;
+    let saved: { title?: string; description?: string } | null = null;
+    try {
+      const raw = localStorage.getItem(composeKey(auditId));
+      if (raw) saved = JSON.parse(raw) as { title?: string; description?: string };
+    } catch {
+      saved = null;
+    }
+    setPrTitle(saved?.title?.trim() ? saved.title! : defaultPrTitle);
+    setPrDescription(typeof saved?.description === "string" ? saved.description : defaultPrDescription);
+  }, [audit, auditId, defaultPrTitle, defaultPrDescription]);
+
+  // Persist composer edits (debounced) until creation.
+  useEffect(() => {
+    if (!composerHydrated.current) return;
+    const t = setTimeout(() => {
+      try {
+        localStorage.setItem(composeKey(auditId), JSON.stringify({ title: prTitle, description: prDescription }));
+      } catch {
+        // storage quota — the in-memory state still drives creation this session
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [prTitle, prDescription, auditId]);
 
   // ---- Build initial file states from preview ---------------------------------
   // Guarded: audit refetches (after item PATCHes) must NOT stomp in-progress edits.
@@ -938,23 +1016,29 @@ export default function AuditEditPage() {
       return;
     }
 
+    // Bind the Overview composer's content into the actual PR.
+    const effectiveTitle = prTitle.trim() || defaultPrTitle;
+    const effectiveDescription = prDescription.trim() || defaultPrDescription;
+
     applyContentsMutation.mutate(
       {
         owner,
         repo,
         files: payloadFiles,
         targetBranch: branch,
-        title: `AuditPilot: reviewed fixes for ${repo}`,
+        title: effectiveTitle,
+        description: effectiveDescription,
       },
       {
         onSuccess: (data: any) => {
           localStorage.removeItem(draftKey(auditId));
+          localStorage.removeItem(composeKey(auditId));
           const url = data.prUrl ? `?url=${encodeURIComponent(data.prUrl)}` : "";
           setLocation(`/app/audit/${owner}/${repo}/success/${data.prNumber}${url}`);
         },
       },
     );
-  }, [applyContentsMutation, auditId, branch, changedPaths, files, owner, preview, repo, setLocation, toast]);
+  }, [applyContentsMutation, auditId, branch, changedPaths, files, owner, preview, prDescription, prTitle, defaultPrDescription, defaultPrTitle, repo, setLocation, toast]);
 
   const scrollTo = (path: string) => {
     document.getElementById(`file-${path}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -992,7 +1076,7 @@ export default function AuditEditPage() {
                   {(repo || owner || "?").slice(0, 2).toUpperCase()}
                 </div>
                 <div className="min-w-0">
-                  <h1 className="text-lg font-bold text-slate-100 truncate">Review &amp; edit fixes — {owner}/{repo}</h1>
+                  <h1 className="text-xl md:text-2xl font-bold tracking-tight text-white truncate">Review &amp; edit fixes — {owner}/{repo}</h1>
                   <p className="text-xs text-slate-500">
                     Branch <span className="font-mono font-semibold">{branch}</span>
                     {isPreviewLoading ? " · loading preview…" : ` · ${paths.length} audited file(s)`}
@@ -1018,21 +1102,33 @@ export default function AuditEditPage() {
           {/* Tabs */}
           <div className="flex items-center gap-6 mt-4 border-b border-white/10 text-sm">
             <button
-              className="pb-2 text-slate-400 hover:text-slate-100 font-medium"
-              onClick={() => setLocation(`/app/audit/${owner}/${repo}/results/${auditId}`)}
+              className={`pb-2 font-medium flex items-center gap-2 -mb-px border-b-2 transition-colors ${
+                tab === "overview"
+                  ? "border-indigo-500 font-semibold text-slate-100"
+                  : "border-transparent text-slate-400 hover:text-slate-100"
+              }`}
+              onClick={() => setTab("overview")}
             >
               Overview
             </button>
-            <div className="pb-2 border-b-2 border-indigo-500 font-semibold text-slate-100 flex items-center gap-2">
+            <button
+              className={`pb-2 font-medium flex items-center gap-2 -mb-px border-b-2 transition-colors ${
+                tab === "files"
+                  ? "border-indigo-500 font-semibold text-slate-100"
+                  : "border-transparent text-slate-400 hover:text-slate-100"
+              }`}
+              onClick={() => setTab("files")}
+            >
               Files changed
               <span className="text-[11px] bg-white/5 rounded px-1.5 py-0.5 font-bold text-slate-400">{paths.length}</span>
-            </div>
+            </button>
             <span className="pb-2 text-slate-600 cursor-not-allowed" title="Commits appear after the PR is created">
               Commits
             </span>
           </div>
 
           {/* Toolbar */}
+          {tab === "files" && (
           <div className="flex items-center justify-between gap-3 mt-3">
             <div className="flex items-center gap-2">
               <select
@@ -1053,9 +1149,35 @@ export default function AuditEditPage() {
               {viewedCount} of {paths.length} files viewed
             </span>
           </div>
+          )}
         </div>
 
-        {/* ── Body: sidebar + diff area ───────────────────────────────── */}
+        {/* ── Overview tab: GitHub-style PR composer ──────────────────── */}
+        {tab === "overview" && (
+          <div className="px-4 mt-6">
+            <PRComposer
+              owner={owner}
+              repo={repo}
+              baseBranch={branch}
+              headBranch={headBranch}
+              title={prTitle}
+              description={prDescription}
+              onTitleChange={setPrTitle}
+              onDescriptionChange={setPrDescription}
+              onCreate={createPR}
+              onOpenFiles={() => setTab("files")}
+              creating={isCreating}
+              isPreviewLoading={isPreviewLoading}
+              fileCount={paths.length}
+              changedCount={changedPaths.length}
+              avatarUrl={authStatus?.user?.avatarUrl}
+              userName={authStatus?.user?.username}
+            />
+          </div>
+        )}
+
+        {/* ── Body: sidebar + diff area (Files changed tab) ───────────── */}
+        {tab === "files" && (
         <div className="flex gap-4 px-4 mt-3">
           {/* Sidebar */}
           <aside className="hidden lg:block w-72 shrink-0">
@@ -1149,6 +1271,7 @@ export default function AuditEditPage() {
             )}
           </main>
         </div>
+        )}
 
         {/* Sticky create bar */}
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
