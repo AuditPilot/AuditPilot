@@ -1,0 +1,156 @@
+# Roadmap — AuditPilot 2.0 (M0 → M10)
+
+> Status artifact. Live document: each milestone updates its own status line + limitations section as it closes.
+> Source of truth for ordering: the master spec's P0-first priority system. Companion: [`../product/feature-priorities.md`](../product/feature-priorities.md)
+
+## Milestone ledger
+
+| # | Milestone | Priority | Status | Branch/commits |
+|---|---|---|---|---|
+| M0 | Full technical & product audit + architecture docs | P0 | **Done** (on `feat/foundation-m0-m1`) | this branch |
+| M1 | Workspace architecture, repository entities, safe migrations | P0 | **In progress** | `feat/foundation-m0-m1` |
+| M2 | Provider abstraction (GitHub) + repo-centric experience + full PR visibility + global PR inbox | P0/P1 | Planned | |
+| M3 | GitHub App, permissions, webhooks, event-driven sync + reconciliation | P1 | Planned | |
+| M4 | Persistent findings lifecycle, dedupe, audit comparison, health score | P1 | Planned | |
+| M5 | Bitbucket Cloud adapter + cross-provider dashboard | P1 | Planned | |
+| M6 | Staged AI audit engine (static-first, tiers, fingerprints ground truth) | P1 | Planned | |
+| M7 | Safe remediation v2 (anchor validation, stale-SHA, verification, regression flags) | P1 | Planned | |
+| M8 | Team collaboration (invites, roles UX, assignments, activity) + reports surface | P1/P2 | Planned | |
+| M9 | Workspace-aware billing, usage metering, cost controls, plan enforcement | P0/P1 | Planned | |
+| M10 | Production hardening, observability, truthful marketing, launch readiness | P0/P1 | Planned | |
+
+## Standing acceptance gates (every milestone)
+
+1. `npm run lint` — zero errors.
+2. `npm run check` — **tests re-included in tsconfig** (unblocks M1).
+3. `npm run test` — all tests pass; count reported honestly; no skipped/weakened tests.
+4. `npm run build` — both client and server bundles succeed.
+5. Docs updated for anything that changed contract (database-design, target-architecture, roadmap).
+6. Remaining limitations recorded here.
+7. No direct commits to `main`/`development`; feature branches only; migrations + rollback scripts ship together.
+
+---
+
+## M0 — Done ✅
+
+Deliverables: complete repo audit (file:line evidence in `docs/architecture/current-state.md`),
+9-document doc set (this one included), S0 dead-API fix, branch strategy established.
+
+## M1 — Workspace architecture, repository entities, safe migrations (P0)
+
+**Scope (data foundations only; no UI rewiring):**
+
+- Models: `Workspace`, `WorkspaceMember` (unique `{workspaceId,userId}`, roles
+  `owner|admin|developer|viewer`), `ProviderConnection` (AES-GCM credentials), `Repository`
+  (unique `{workspaceId,provider,providerExternalId}`), `PullRequest` (unique
+  `{repositoryId,provider,number}`), `Finding` (unique `{repositoryId,fingerprint}`, lifecycle enum).
+- Additive `Audit` fields: `workspaceId?, repositoryId?, provider?, commitSha?, auditType?,
+  originatingJobId?` — **no backfill** of legacy audits.
+- Module `server/modules/workspaces/{service,routes}.ts` + `server/middleware/workspace.ts`
+  (`requireAuth → resolveWorkspaceMember → requireRole`), mounted in `app.ts`.
+- `scripts/migrate-workspaces.ts` (+ npm script): personal workspace per user → owner membership →
+  ProviderConnection cloned from the existing encrypted GitHub token → repository registry seeded
+  from `/user/repos` (≤100) → report legacy audits `legacy-unlinked`. Idempotent; re-runnable.
+- `scripts/rollback-workspaces.ts`: drops new collections & added Audit fields.
+- Tests: slug/member uniqueness, role gates, workspace isolation (404-shaped cross-access),
+  repository upsert uniqueness, fingerprint dedupe. Re-include `**/*.test.ts` in tsconfig.
+
+**Acceptance criteria (M1):**
+
+- [ ] All gates green; test count grows (target +≥15).
+- [ ] `scripts/migrate-workspaces.ts` twice on a seeded dev DB → second run no-ops (idempotent proof in test).
+- [ ] Cross-workspace access tests: read of foreign workspace resource → 404; foreign repo → 404.
+- [ ] Existing 70 tests unchanged and passing.
+- [ ] Honest status note below.
+
+**Status:** in progress — models/workspaces module/migration are the current branch work; repo-scoped
+route rewiring and workspace UI explicitly deferred to M2 (recorded so nobody mistakes the data
+foundation for an end-user feature).
+
+## M2 — GitHub adapter + repository-centric experience (P0/P1)
+
+- `integrations/source-control/` (types/capabilities/factory + github/) per `provider-abstraction.md`.
+- Rewire `repos` + `reviews` onto adapters; PR listing becomes repo-scoped, all-authors, paged,
+  state filters; global PR inbox endpoint shares the same service.
+- Sync: Repository/PullRequest mirror tables populated (sync-on-demand first; webhook later).
+- Frontend: workspace-aware routes `/app/workspaces/:wsId/repositories/:repoId/{overview,pulls,audits,findings}`;
+  loading/error/empty/synced-at states everywhere; fix the repo column (data now normalized).
+- `_NON-DONE markers in UI for anything still user-legacy.`
+
+**Acceptance:** PR list shows other authors' open/closed/merged PRs with pagination; inbox
+deduplicates across repos; no route accepts repo identity as free text without workspace resolution;
+adapters covered by contract tests with recorded fixtures.
+
+## M3 — GitHub App + webhooks + reconciliation (P1)
+
+- Install flow (installation webhook → permission verification), installation-token minting/caching,
+  identity/auth separation, uninstall/revocation handling.
+- Webhook endpoints for push/pr./review/check events: signature verify → event ledger (TTL 30d,
+  unique deliveryId) → job → normalized processor. Missed-webhook reconciliation job. Rate-limit
+  respectful sync. Retry endpoint for dead events.
+**Acceptance:** replayed delivery is a no-op (idempotency test); simulated missed webhook heals within
+one reconciliation cycle without double AI reviews (headSha dedupe test documented).
+
+## M4 — Findings lifecycle + audit comparison + health (P1)
+
+- Finding writes inside audit pipeline: fingerprint at generation, dedupe on insert (persisted
+  first/last-seen), reopen detection, regression flag vs. previously-fixed.
+- Audit list/comparison views bound to Repository; legacy audits stay user-scoped but the migration
+  report and audit list make linkage explicit.
+- Health score (documented formula, missing-data ≠ healthy).
+**Acceptance:** same finding detected in two consecutive audits = one Finding row (update, not
+duplicate); regression test proves re-detection links to the fixed Finding; score formula published.
+
+## M5 — Bitbucket Cloud (P1)
+
+- Second adapter (OAuth w/ refresh, capability map), branch/bitbucket-webhook support, cross-provider
+  docs + `.env.example` update.
+**Acceptance:** workspace with both providers shows both repos in one inbox; provider gating tests
+prove non-available capabilities route to capability-checked no-ops with truthful UI copy.
+
+## M6 — Staged audit engine (P1)
+
+- Stage pipeline per target-architecture §5 (discovery → classification → deps → secrets → static →
+  AI-chunks → validation → fingerprints → reports). Evaluate Semgrep/Gitleaks/OSV (licensing, ops cost,
+  deployment) with a documented decision. Tier routing: triage vs deep actually used. Chunk planner +
+  bounded file analysis; incremental audits.
+**Acceptance:** audit on a 1k-file repo completes with bounded cost (recorded), deterministic scanners
+produce findings the AI does not need to discover, AIUsage tracks stage-level cost; report rows
+finally readable via UI.
+
+## M7 — Safe remediation v2 (P1)
+
+- Fix workflow per spec §11 (anchor revalidation, stale headSha detection, protected-branch respect,
+  verification step, finding linkage, skipped/failed reporting). Per-issue errors no longer swallowed.
+**Acceptance:** hostile simulation tests (file changed between preview and commit → skip + report;
+protected branch → explicit denial path; verification never claims success without check evidence).
+
+## M8 — Collaboration + reports + analytics surface (P1/P2)
+
+- Invitations, role changes, assignment of findings, activity feed, notifications; reports UI around
+  the existing Report rows; copilot groundwork (workspace-scoped, cited).
+**Acceptance:** role matrix tests; an agency workspace cannot see another workspace's client data
+(HR checks at service AND route layers).
+
+## M9 — Workspace billing (P0 within M9 window)
+
+- Stripe checkout/subscription moves to workspace; usage metering monthly (workspaceId,action,period
+  unique), AI cost tracking rollups, plan entitlements enforced server-side, webhook idempotency
+  (event-id ledger), downgrade behavior.
+**Acceptance:** replayed Stripe webhook no-op; plan limit exceeded → 402 envelope honored by UI
+(dead modal resurrected); all existing user subscriptions migrated without losing Stripe state.
+
+## M10 — Production hardening + launch readiness (P0/P1)
+
+- helmet + rate limiting (F-28), graceful shutdown, DB-connect resilience/readiness probe, CI
+  docker build, observability (sync/job/AI cost dashboards), secret redaction audit, data-retention
+  & deletion policy, staging environment, truthful pricing copy (F-32), launch checklist.
+**Acceptance:** all gates + new security scan in CI green; `static.ts`/vite SPA fallback no longer
+200-masks unmatched `/api` paths (404 JSON for /api/*); docs complete.
+
+## Known limitations carried forward (updated per milestone)
+
+- After M1: data model is workspace-ready, **but no user-visible feature changes yet** — UI still
+  user-centric; PR features unchanged in behavior. This is deliberate (M2 rewires consumers).
+- After M1: legacy audits remain unlinked to workspaces/repositories (insufficient historical data);
+  they remain accessible through the existing user-scoped audit UI until M4.
