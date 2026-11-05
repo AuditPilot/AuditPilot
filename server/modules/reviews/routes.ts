@@ -226,6 +226,26 @@ reviewsRouter.put(
   },
 );
 
+// === PR detail (full PR object — includes body, base/head refs & repo) ===
+
+reviewsRouter.get(
+  "/repos/:owner/:repo/pulls/:number",
+  requireAuth,
+  async (req: Request, res: Response) => {
+    const { owner, repo, number } = req.params;
+    const gh = githubClientFromToken(tokenOf(req));
+
+    try {
+      const pr = await gh.get(`/repos/${owner}/${repo}/pulls/${number}`);
+      return res.json(pr);
+    } catch (error) {
+      const message = error instanceof GitHubApiError ? error.message : "Failed to fetch Pull Request";
+      logger.error({ err: message, owner, repo, number }, "PR detail fetch error");
+      return res.status(500).json({ message });
+    }
+  },
+);
+
 // === Update PR metadata ===
 
 reviewsRouter.patch(

@@ -115,6 +115,14 @@ export const api = {
     return res.json();
   },
 
+  /** Full PR object (body, user, base/head refs) — the list endpoint is
+   * search-based and drops the description, so detail pages use this. */
+  async getPullDetail(owner: string, repo: string, number: string) {
+    const res = await fetch(`${API_BASE}/api/repos/${owner}/${repo}/pulls/${number}`, { ...cred });
+    if (!res.ok) throw new Error("Failed to fetch pull request detail");
+    return res.json();
+  },
+
   /**
    * REAL per-item current code for the fix-review UI (never the AI's stale
    * snapshot). Server fetches each referenced file once and locates the

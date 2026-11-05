@@ -20,6 +20,17 @@ export function usePRFiles(owner: string, repo: string, number: number) {
     });
 }
 
+export function usePRDetail(owner: string, repo: string, number: number) {
+    return useQuery<any>({
+        queryKey: ["pull-detail", owner, repo, number],
+        queryFn: async () => {
+            if (!owner || !repo || !number) return null;
+            return api.getPullDetail(owner, repo, number.toString());
+        },
+        enabled: !!owner && !!repo && !!number,
+    });
+}
+
 export function usePRAudit() {
     return useMutation({
         mutationFn: async ({ owner, repo, number }: { owner: string; repo: string; number: number }) => {
@@ -74,6 +85,7 @@ export function useUpdatePR() {
         },
         onSuccess: (data, variables) => {
             queryClient.invalidateQueries({ queryKey: ["pulls"] });
+            queryClient.invalidateQueries({ queryKey: ["pull-detail", variables.owner, variables.repo, variables.number] });
             toast({
                 title: "PR Updated",
                 description: `Successfully updated PR #${variables.number}`,
