@@ -1,6 +1,6 @@
 # Keep Docker build contexts small and secret-free.
-# Build only depends on: package.json, package-lock.json, script/, vite.config.ts,
-# vite-plugin-meta-images.ts, client/, shared/, server/, docker/nginx/.
+# Frontend build context: package manifests, client/, shared/, Vite config,
+# and docker/nginx/ only.
 
 # dependencies & build output
 node_modules

@@ -26,10 +26,16 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      maxParallelFileOps: 5,
+    },
   },
   server: {
     host: "0.0.0.0",
     allowedHosts: true,
+    proxy: {
+      "/api": process.env.VITE_API_PROXY || "http://localhost:5002",
+    },
     fs: {
       strict: true,
       deny: ["**/.*"],

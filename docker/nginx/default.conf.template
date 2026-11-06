@@ -3,7 +3,7 @@
 # at startup; only DEFINED environment variables are substituted, so native
 # nginx variables ($host, $uri, …) are untouched.
 #
-#   API_UPSTREAM — host:port of the backend service (default "api:8080").
+#   API_UPSTREAM — host:port of the standalone API (default "host.docker.internal:8080").
 #
 # The /api/ proxy keeps the browser on one origin (cookies stay SameSite=Lax).
 # For a fully split deployment (frontend site != API origin) bake
