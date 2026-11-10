@@ -95,6 +95,35 @@ App connection flow. **Not done here:** legacy audit backfill (insufficient data
 deduplicates across repos; no route accepts repo identity as free text without workspace resolution;
 adapters covered by contract tests with recorded fixtures.
 
+**Status (M2 complete — backend + frontend, branch `feat/foundation-m0-m1`):**
+- [x] Adapter layer exactly per `provider-abstraction.md` §2–§4: `types.ts` (normalized models,
+  `SourceControlProvider`), `capabilities.ts` (GitHub + Bitbucket placeholder map),
+  `github/provider.ts` (wraps `GitHubClient` as a thin transport), `provider-factory.ts`
+  (`providerFromToken` / `providerFromTransport` / `providerFromConnection`). **Contract
+  extension:** `updatePullRequest` added to the interface (needed by the legacy PATCH-PR route);
+  noted as an intentional addition to the spec doc.
+- [x] Contract tests: 15 `github/provider.test.ts` cases against a fake transport (normalized
+  models, merged-state derivation, `patch:null`, 404→null file content, pagination heuristics).
+- [x] Rewires: `repos` + `reviews` routes and the PR-review worker now resolve credentials via
+  `providerForUser` (workspace connection → legacy user token fallback with deprecation warning) —
+  no handler builds a client from a request token. Repo-audit worker stays raw-client (M4 scope).
+- [x] Sync-on-demand: `POST /workspaces/:id/repositories/:repoId/sync` refreshes the Repository
+  mirror + up to 3×100 PRs (upsert-idempotent); repo-scoped PR list + workspace-wide PR inbox
+  (dedupe via mirror upsert, author-restricted GitHub search deleted). Breaking response changes
+  (normalized shapes, bare array for `/repos`) accepted — the legacy UI was updated in the same
+  milestone.
+- [x] Frontend: `WorkspacesPage` (picker), workspace registry page (table with sync-state badges,
+  relative last-synced, per-row sync, register-from-GitHub dialog with workspace-connection
+  bootstrap banner), `RepoShell` with overview/pulls/audits/findings tabs; repo PR list with
+  open/merged/closed/all filters + pagination; legacy PullsPage rewired onto the workspace inbox —
+  **repo column fixed** (was blank: legacy code read GitHub's `base.repo.full_name`).
+  `_NON-DONE` markers on the audits/findings tabs (M4 deliverables).
+- [~] Webhook-driven sync: deliberately deferred to M3 (spec says sync-on-demand first).
+- [x] Gates: lint 0 errors, tsc clean, **106 tests** (86 → 106, +20), build OK (API 168.0kb,
+  SPA builds). Honest caveats: branch pagination heuristic (a full 100-branch page is treated as
+  "more exist"); register-dialog candidate list reads the caller's GitHub account, so org repos the
+  token can see but aren't owned won't appear until M3's installation flow.
+
 ## M3 — GitHub App + webhooks + reconciliation (P1)
 
 - Install flow (installation webhook → permission verification), installation-token minting/caching,

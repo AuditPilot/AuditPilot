@@ -169,7 +169,12 @@ export function useBranches(owner: string, repo: string) {
         queryKey: ["branches", owner, repo],
         queryFn: async () => {
             if (!owner || !repo) return [];
-            return api.getBranches(owner, repo);
+            const data = await api.getBranches(owner, repo);
+            // Normalized branches are {name, commitSha, isDefault} — tolerate
+            // both that and legacy raw string[] here.
+            return (Array.isArray(data) ? data : [])
+                .map((b: unknown) => (typeof b === "string" ? b : (b as { name?: string } | null)?.name ?? ""))
+                .filter((name: string): name is string => name.length > 0);
         },
         enabled: !!owner && !!repo,
     });

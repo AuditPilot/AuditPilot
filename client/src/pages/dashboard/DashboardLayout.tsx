@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuthStatus } from "@/hooks/use-repos";
 import { Button } from "@/components/ui/button";
-import { Code2, Shield, GitPullRequest, Zap, Eye, Loader2 } from "lucide-react";
+import { Code2, Shield, GitPullRequest, Zap, Eye, Loader2, Building2 } from "lucide-react";
 import { NavItem } from "@/components/dashboard/NavItem";
 import { UsageCounter } from "@/components/dashboard/UsageCounter";
 import { LimitReachedModal } from "@/components/dashboard/LimitReachedModal";
@@ -39,6 +39,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <div className="p-4 space-y-1">
           <div className="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">Platform</div>
+          <NavItem
+            active={location.startsWith('/app/workspaces')}
+            icon={<Building2 className="w-4 h-4" />}
+            label="Workspaces"
+            onClick={() => setLocation('/app/workspaces')}
+          />
           <NavItem
             active={location === '/app/repos' || location === '/app'}
             icon={<Code2 className="w-4 h-4" />}

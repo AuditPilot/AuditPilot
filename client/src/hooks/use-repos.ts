@@ -1,20 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api-service";
-
-interface GitHubRepo {
-    id: number;
-    name: string;
-    full_name: string;
-    description: string;
-    stargazers_count: number;
-    language: string;
-    updated_at: string;
-    html_url: string;
-    default_branch: string;
-}
+import type { NormalizedRepository } from "@/lib/api-service";
 
 export function useRepos() {
-    return useQuery<GitHubRepo[]>({
+    return useQuery<NormalizedRepository[]>({
         queryKey: ["repos"],
         queryFn: () => api.getRepos(),
     });

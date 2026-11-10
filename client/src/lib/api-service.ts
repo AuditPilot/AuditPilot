@@ -292,5 +292,191 @@ export const api = {
     });
     if (!res.ok) throw new Error("Failed to update pull request");
     return res.json();
+  },
+
+  // --- Workspaces (M2) ---
+
+  async getWorkspaces() {
+    const res = await fetch(`${API_BASE}/api/workspaces`, { ...cred });
+    if (!res.ok) throw new Error("Failed to fetch workspaces");
+    return res.json() as Promise<{ workspaces: WorkspaceSummary[] }>;
+  },
+
+  async getWorkspace(workspaceId: string) {
+    const res = await fetch(`${API_BASE}/api/workspaces/${workspaceId}`, { ...cred });
+    if (!res.ok) throw new Error("Failed to fetch workspace");
+    return res.json() as Promise<{ workspace: WorkspaceDetail }>;
+  },
+
+  async getWorkspaceConnections(workspaceId: string) {
+    const res = await fetch(`${API_BASE}/api/workspaces/${workspaceId}/provider-connections`, { ...cred });
+    if (!res.ok) throw new Error("Failed to fetch provider connections");
+    return res.json() as Promise<{ connections: ProviderConnectionSummary[] }>;
+  },
+
+  /** Creates a workspace GitHub connection from the user's legacy OAuth token. */
+  async connectWorkspaceGithub(workspaceId: string) {
+    const res = await fetch(`${API_BASE}/api/workspaces/${workspaceId}/provider-connections`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ provider: "github" }),
+      ...cred,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({} as { message?: string }));
+      throw new Error(body.message || "Failed to connect GitHub to this workspace");
+    }
+    return res.json();
+  },
+
+  async getWorkspaceRepositories(workspaceId: string) {
+    const res = await fetch(`${API_BASE}/api/workspaces/${workspaceId}/repositories`, { ...cred });
+    if (!res.ok) throw new Error("Failed to fetch workspace repositories");
+    return res.json() as Promise<{ repositories: WorkspaceRepository[] }>;
+  },
+
+  async registerWorkspaceRepository(
+    workspaceId: string,
+    data: {
+      providerConnectionId: string;
+      provider: "github" | "bitbucket";
+      providerExternalId: string;
+      ownerAccount: string;
+      fullName: string;
+      name?: string;
+      visibility?: "public" | "private" | "internal";
+      archived?: boolean;
+      defaultBranch?: string | null;
+    },
+  ) {
+    const res = await fetch(`${API_BASE}/api/workspaces/${workspaceId}/repositories/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+      ...cred,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({} as { message?: string }));
+      throw new Error(body.message || "Failed to register repository");
+    }
+    return res.json();
+  },
+
+  async syncWorkspaceRepository(workspaceId: string, repoId: string) {
+    const res = await fetch(`${API_BASE}/api/workspaces/${workspaceId}/repositories/${repoId}/sync`, {
+      method: "POST",
+      ...cred,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({} as { message?: string }));
+      throw new Error(body.message || "Failed to sync repository");
+    }
+    return res.json() as Promise<{ repository: { id: string; fullName: string; defaultBranch: string | null; syncState: string; lastSyncedAt: string | null }; pullRequestsSynced: number }>;
+  },
+
+  async getWorkspaceRepoPulls(workspaceId: string, repoId: string, params: { state?: string; page?: number; perPage?: number } = {}) {
+    const q = new URLSearchParams();
+    if (params.state) q.set("state", params.state);
+    if (params.page) q.set("page", String(params.page));
+    if (params.perPage) q.set("perPage", String(params.perPage));
+    const res = await fetch(`${API_BASE}/api/workspaces/${workspaceId}/repositories/${repoId}/pulls?${q}`, { ...cred });
+    if (!res.ok) throw new Error("Failed to fetch pull requests");
+    return res.json() as Promise<PullListResponse>;
+  },
+
+  async getWorkspacePulls(workspaceId: string, params: { state?: string; page?: number; perPage?: number } = {}) {
+    const q = new URLSearchParams();
+    if (params.state) q.set("state", params.state);
+    if (params.page) q.set("page", String(params.page));
+    if (params.perPage) q.set("perPage", String(params.perPage));
+    const res = await fetch(`${API_BASE}/api/workspaces/${workspaceId}/pulls?${q}`, { ...cred });
+    if (!res.ok) throw new Error("Failed to fetch pull requests");
+    return res.json() as Promise<PullListResponse>;
   }
 };
+
+// --- Normalized API shapes (mirror-backed, provider-agnostic) ---
+
+/** Normalized repository returned by GET /api/repos (provider-agnostic). */
+export interface NormalizedRepository {
+  provider: string;
+  providerExternalId: string;
+  ownerLogin: string;
+  name: string;
+  fullName: string;
+  description?: string | null;
+  language?: string | null;
+  defaultBranch?: string | null;
+  visibility?: string | null;
+  archived?: boolean;
+  stargazersCount?: number | null;
+  updatedAt?: string | null;
+  htmlUrl?: string | null;
+}
+
+export interface WorkspaceSummary {
+  id: string;
+  name: string;
+  slug: string;
+  role: string;
+  type?: string;
+}
+
+export interface WorkspaceDetail {
+  id: string;
+  name: string;
+  slug: string;
+  type: string;
+  plan: string;
+  role: string;
+  owner: string;
+  createdAt: string;
+}
+
+export interface ProviderConnectionSummary {
+  id: string;
+  provider: string;
+  kind: string;
+  providerAccountId: string;
+  providerAccountLogin: string | null;
+  status: string;
+}
+
+export interface WorkspaceRepository {
+  id: string;
+  provider: string;
+  providerExternalId: string;
+  owner: string;
+  fullName: string;
+  name: string;
+  visibility: string;
+  archived: boolean;
+  defaultBranch: string | null;
+  syncState: string;
+  lastSyncedAt: string | null;
+}
+
+export interface NormalizedPull {
+  id: string;
+  number: number;
+  title: string;
+  state: "open" | "closed" | "merged";
+  isDraft: boolean;
+  author: { login: string; avatarUrl: string | null };
+  sourceBranch: string;
+  destinationBranch: string;
+  url: string;
+  additions: number;
+  deletions: number;
+  headSha: string | null;
+  checkStatus: string;
+  lastSeenAt: string | null;
+  repository?: { id: string; fullName: string; name: string };
+}
+
+export interface PullListResponse {
+  pulls: NormalizedPull[];
+  page: number;
+  hasNext: boolean;
+  repository?: { id: string; fullName: string };
+}

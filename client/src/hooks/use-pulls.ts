@@ -1,11 +1,35 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/api-service";
+import type { PullListResponse } from "@/lib/api-service";
+
+/**
+ * Legacy pull pages resolve owner/repo from the list item's GitHub-shaped
+ * fields. The mirror-backed inbox returns normalized pulls — alias the
+ * fields those resolvers read so the existing pages keep working.
+ */
+function aliasNormalizedPull(pr: any): any {
+  if (!pr || typeof pr !== "object" || pr.base || !("sourceBranch" in pr)) return pr;
+  const fullName = pr.repository?.fullName ?? "";
+  return {
+    ...pr,
+    owner: fullName.split("/")[0] || "",
+    name: pr.repository?.name ?? "",
+    repo: { name: pr.repository?.name ?? "", full_name: fullName },
+    base: { ref: pr.destinationBranch },
+    head: { ref: pr.sourceBranch },
+    user: pr.author ? { login: pr.author.login, avatar_url: pr.author.avatarUrl ?? undefined } : undefined,
+  };
+}
 
 export function usePulls() {
     return useQuery<any[]>({
         queryKey: ["pulls"],
-        queryFn: () => api.getPulls(),
+        queryFn: async () => {
+            const data = await api.getPulls() as PullListResponse | any[];
+            const list = Array.isArray(data) ? data : (data?.pulls ?? []);
+            return list.map(aliasNormalizedPull);
+        },
     });
 }
 
@@ -25,7 +49,8 @@ export function usePRDetail(owner: string, repo: string, number: number) {
         queryKey: ["pull-detail", owner, repo, number],
         queryFn: async () => {
             if (!owner || !repo || !number) return null;
-            return api.getPullDetail(owner, repo, number.toString());
+            const pr = await api.getPullDetail(owner, repo, number.toString());
+            return aliasNormalizedPull({ ...pr, repository: { name: repo, fullName: `${owner}/${repo}` } });
         },
         enabled: !!owner && !!repo && !!number,
     });

@@ -15,6 +15,9 @@ import ReposPage from "@/pages/dashboard/ReposPage";
 import AuditHistoryPage from "@/pages/dashboard/AuditHistoryPage";
 import PullsPage from "@/pages/dashboard/PullsPage";
 import SettingsPage from "@/pages/dashboard/SettingsPage";
+import WorkspacesPage from "@/pages/dashboard/WorkspacesPage";
+import WorkspacePage from "@/pages/dashboard/WorkspacePage";
+import RepoShell from "@/pages/dashboard/workspace/RepoShell";
 
 // Audit Flow
 import AuditProgressPage from "@/pages/dashboard/audit/AuditProgressPage";
@@ -46,6 +49,12 @@ function Router() {
       <ProtectedRoute path="/app/pulls" component={PullsPage} />
       <ProtectedRoute path="/app/pr-manager" component={PRManagerPage} />
       <ProtectedRoute path="/app/settings" component={SettingsPage} />
+
+      {/* Workspace-aware routes (M2) */}
+      <ProtectedRoute path="/app/workspaces" component={WorkspacesPage} />
+      <ProtectedRoute path="/app/workspaces/:wsId" component={WorkspacePage} />
+      <ProtectedRoute path="/app/workspaces/:wsId/repositories/:repoId" component={RepoShell} />
+      <ProtectedRoute path="/app/workspaces/:wsId/repositories/:repoId/:tab" component={RepoShell} />
 
       {/* Audit Flow Routes */}
       <ProtectedRoute path="/app/audit/:owner/:repo/:branch" component={AuditProgressPage} />
