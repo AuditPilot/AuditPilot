@@ -8,7 +8,7 @@
 | # | Milestone | Priority | Status | Branch/commits |
 |---|---|---|---|---|
 | M0 | Full technical & product audit + architecture docs | P0 | **Done** (on `feat/foundation-m0-m1`) | this branch |
-| M1 | Workspace architecture, repository entities, safe migrations | P0 | **In progress** | `feat/foundation-m0-m1` |
+| M1 | Workspace architecture, repository entities, safe migrations | P0 | **Done (backend)** | `feat/foundation-m0-m1` |
 | M2 | Provider abstraction (GitHub) + repo-centric experience + full PR visibility + global PR inbox | P0/P1 | Planned | |
 | M3 | GitHub App, permissions, webhooks, event-driven sync + reconciliation | P1 | Planned | |
 | M4 | Persistent findings lifecycle, dedupe, audit comparison, health score | P1 | Planned | |
@@ -57,15 +57,29 @@ Deliverables: complete repo audit (file:line evidence in `docs/architecture/curr
 
 **Acceptance criteria (M1):**
 
-- [ ] All gates green; test count grows (target +≥15).
-- [ ] `scripts/migrate-workspaces.ts` twice on a seeded dev DB → second run no-ops (idempotent proof in test).
-- [ ] Cross-workspace access tests: read of foreign workspace resource → 404; foreign repo → 404.
-- [ ] Existing 70 tests unchanged and passing.
-- [ ] Honest status note below.
+- [x] All gates green; test count grows (target +≥15) — 70 → **86 tests** (+16). New `lint`
+  gate (typescript-eslint flat config) added and passing; `check` (tests re-included), `test`,
+  `build` all green on the API repo.
+- [~] `scripts/migrate-workspaces.ts` idempotency: implemented via upserts keyed on
+  `{workspaceId, provider, providerExternalId}` and `{workspaceId, userId}`; upsert convergence is
+  covered by tests (double `registerRepository` → same `_id`, double `ensurePersonalWorkspace` →
+  same workspace). A full double-run on a seeded dev DB still needs a live GitHub token — verify
+  on first real execution and record the result here.
+- [x] Cross-workspace access tests: read of foreign workspace/repos/members → 404; foreign
+  register/rename/delete → 404; JWT identity source asserted.
+- [x] Existing 70 tests unchanged and passing (one latent type fix in `ownership.test.ts`,
+  behavior untouched).
+- [x] Honest status note below.
 
-**Status:** in progress — models/workspaces module/migration are the current branch work; repo-scoped
-route rewiring and workspace UI explicitly deferred to M2 (recorded so nobody mistakes the data
-foundation for an end-user feature).
+**Status (M1 complete — backend only, branch `feat/foundation-m0-m1` of the API repo):**
+all six models + additive Audit fields shipped exactly per `database-design.md`;
+`server/modules/workspaces/{service,routes}.ts` + `server/middleware/workspace.ts` mounted under
+`/api`; idempotent `migrate-workspaces.ts` (DRY_RUN / SKIP_GITHUB_SEED flags) +
+`rollback-workspaces.ts` (requires `--yes`). Also fixed en route: `connectDB()` readyState guard
+(per-request connect hijacked the test DB), unused-import/type cleanups so the new lint gate
+passes. **Deferred to M2 (explicitly):** repo-scoped route rewiring, workspace-aware UI, GitHub
+App connection flow. **Not done here:** legacy audit backfill (insufficient data — reported as
+`legacy-unlinked` by the migration).
 
 ## M2 — GitHub adapter + repository-centric experience (P0/P1)
 
