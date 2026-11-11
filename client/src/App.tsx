@@ -17,6 +17,7 @@ import PullsPage from "@/pages/dashboard/PullsPage";
 import SettingsPage from "@/pages/dashboard/SettingsPage";
 import WorkspacesPage from "@/pages/dashboard/WorkspacesPage";
 import WorkspacePage from "@/pages/dashboard/WorkspacePage";
+import GithubAppCallback from "@/pages/dashboard/workspace/GithubAppCallback";
 import RepoShell from "@/pages/dashboard/workspace/RepoShell";
 
 // Audit Flow
@@ -53,6 +54,7 @@ function Router() {
       {/* Workspace-aware routes (M2) */}
       <ProtectedRoute path="/app/workspaces" component={WorkspacesPage} />
       <ProtectedRoute path="/app/workspaces/:wsId" component={WorkspacePage} />
+      <ProtectedRoute path="/app/workspaces/:wsId/github-app/callback" component={GithubAppCallback} />
       <ProtectedRoute path="/app/workspaces/:wsId/repositories/:repoId" component={RepoShell} />
       <ProtectedRoute path="/app/workspaces/:wsId/repositories/:repoId/:tab" component={RepoShell} />
 

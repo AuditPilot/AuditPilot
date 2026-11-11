@@ -329,6 +329,31 @@ export const api = {
     return res.json();
   },
 
+  // --- GitHub App install flow (M3) ---
+
+  async getGithubAppInstallUrl(workspaceId: string) {
+    const res = await fetch(`${API_BASE}/api/workspaces/${workspaceId}/github-app/install-url`, { ...cred });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({} as { message?: string }));
+      throw new Error(body.message || "GitHub App mode is not configured on this deployment");
+    }
+    return res.json() as Promise<{ installUrl: string }>;
+  },
+
+  async completeGithubAppInstall(workspaceId: string, installationId: string) {
+    const res = await fetch(`${API_BASE}/api/workspaces/${workspaceId}/github-app/complete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ installationId }),
+      ...cred,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({} as { message?: string }));
+      throw new Error(body.message || "Failed to complete the GitHub App installation");
+    }
+    return res.json();
+  },
+
   async getWorkspaceRepositories(workspaceId: string) {
     const res = await fetch(`${API_BASE}/api/workspaces/${workspaceId}/repositories`, { ...cred });
     if (!res.ok) throw new Error("Failed to fetch workspace repositories");

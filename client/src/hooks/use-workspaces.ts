@@ -51,6 +51,41 @@ export function useConnectWorkspaceGithub(workspaceId: string) {
   });
 }
 
+export function useGithubAppInstallUrl(workspaceId: string) {
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async () => api.getGithubAppInstallUrl(workspaceId),
+    onSuccess: (data) => {
+      window.location.href = data.installUrl;
+    },
+    onError: (err) => {
+      toast({
+        title: "Cannot start the GitHub App install",
+        description: err instanceof Error ? err.message : "Unexpected error",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useCompleteGithubAppInstall(workspaceId: string) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (installationId: string) =>
+      api.completeGithubAppInstall(workspaceId, installationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workspace-connections", workspaceId] });
+      toast({
+        title: "GitHub App connected",
+        description: "Webhook-driven sync is now active for this workspace's repositories.",
+      });
+    },
+  });
+}
+
 export function useWorkspaceRepositories(workspaceId?: string) {
   return useQuery({
     queryKey: ["workspace-repositories", workspaceId],

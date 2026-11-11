@@ -134,6 +134,46 @@ adapters covered by contract tests with recorded fixtures.
 **Acceptance:** replayed delivery is a no-op (idempotency test); simulated missed webhook heals within
 one reconciliation cycle without double AI reviews (headSha dedupe test documented).
 
+**Status (M3 complete — backend, API branch `feature/cloudflare-workers-deployment` @ `149d29e`; the
+user rebased the workspace onto that branch, same lineage M1 → M2 → M3):**
+- [x] GitHub App infrastructure: `github/installations.ts` — RS256 app JWT (9m) from
+  `GITHUB_APP_PRIVATE_KEY_BASE64`, installation-token cache with 5-min refresh margin,
+  `installationTransport` (401 → cache invalidation → retry), permission verification
+  (`contents`+`pull_requests` required). `GitHubClient` gained an `authScheme` option (`bearer`
+  for app JWTs vs the legacy `token` prefix) — app-level calls now send the correct header.
+- [x] Webhook intake: `POST /api/webhooks/github` — HMAC-SHA256 over `req.rawBody` (constant-time
+  compare), event ledger (`WebhookEvent`: unique `provider+deliveryId` idempotency key, raw payload
+  persisted, 30-day TTL per database-design.md) → `webhook-process` job. Replay deliveries return
+  `{duplicate}` without a second job (idempotency acceptance test). Normalized mapping:
+  pull_request → pr.opened/updated/closed/merged (merged_at disambiguates), review → review.submitted,
+  check_suite/run completed → check.completed, push → repo.push, installation lifecycle →
+  installation.changed/deleted, repository renamed/deleted/archived → repo.renamed/deleted.
+- [x] Normalized processor: payload-only (no extra provider calls) — pr.* upserts the mirror,
+  check events map conclusions → `checkStatus` by headSha, repo.push heals the default branch,
+  repo.deleted marks the mirror removed, installation events upsert/revoke connections.
+- [x] AI-review dedupe (target-architecture §4): `PullRequest.lastReviewedHeadSha` stamped at
+  enqueue time (worker fail path releases it) + a queued/running replay-race guard. Quota owner for
+  webhook-triggered reviews = workspace owner via `usage.reserve`; enqueue failure releases the
+  reservation.
+- [x] Missed-webhook reconciliation: `webhook-reconcile` job (full provider re-sync) for mirrors
+  stale >30min (or never synced) in github-app-connected workspaces, deduped against in-flight
+  jobs; `runReconciliationOnce()` on a 15-min interval inside `startWorkers`; ledger rows stuck
+  `processing` >1h reaped to `dead`. Operator retry endpoint re-enqueues failed/dead deliveries.
+- [x] Install flow: `GET /workspaces/:id/github-app/install-url` + `POST .../github-app/complete`
+  (admin) — verifies the installation via the App API, gates on required permissions, upserts the
+  `kind: github-app` connection keyed on the installation id. `providerForWorkspace` prefers
+  github-app connections before oauth-user ones.
+- [x] Tests: +14 (`webhooks.test.ts`) — signature gate, delivery idempotency, one-review-per-head,
+  in-flight suppression, merged-state mapping, installation lifecycle, repo lifecycle, install
+  handshake, ledger listing + retry. **120/120 passing** (106 → 120); tsc/lint/build clean
+  (200.9kb bundle). Gate caveat: repo-wide lint currently fails only in the user's uncommitted
+  `auth/service.ts` WIP (`any` usage) — webhook module lints clean.
+- [x] Frontend wiring for the install flow: workspace banner now offers "Install GitHub App"
+  (fetches the install-url and redirects) next to the OAuth connect button; new
+  `/app/workspaces/:wsId/github-app/callback` route reads `installation_id`, posts it to
+  `complete`, invalidates the connections query, and returns to the registry. Gates: tsc/lint
+  clean, SPA build OK, vitest no-tests (expected).
+
 ## M4 — Findings lifecycle + audit comparison + health (P1)
 
 - Finding writes inside audit pipeline: fingerprint at generation, dedupe on insert (persisted

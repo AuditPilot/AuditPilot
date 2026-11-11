@@ -14,6 +14,7 @@ import DashboardLayout from "./DashboardLayout";
 import {
   useWorkspace, useWorkspaceConnections, useConnectWorkspaceGithub,
   useWorkspaceRepositories, useSyncWorkspaceRepository, useRegisterWorkspaceRepository,
+  useGithubAppInstallUrl,
 } from "@/hooks/use-workspaces";
 import { api } from "@/lib/api-service";
 import { SyncStateBadge, VisibilityBadge, timeAgo } from "./workspace/shared";
@@ -47,8 +48,10 @@ export default function WorkspacePage() {
   const sync = useSyncWorkspaceRepository(wsId);
   const register = useRegisterWorkspaceRepository(wsId);
   const connect = useConnectWorkspaceGithub(wsId);
+  const installApp = useGithubAppInstallUrl(wsId);
 
   const githubConnection = connections?.find(c => c.provider === "github");
+  const appConnection = connections?.find(c => c.provider === "github" && c.kind === "github-app");
 
   const openRegister = async () => {
     setRegisterOpen(true);
@@ -218,11 +221,22 @@ export default function WorkspacePage() {
                 </div>
               </div>
               {isAdmin && (
-                <Button size="sm" onClick={() => connect.mutate()} disabled={connect.isPending}
-                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 shrink-0">
-                  {connect.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Link2 className="w-4 h-4 mr-2" />}
-                  Connect GitHub
-                </Button>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button size="sm" variant="outline"
+                    onClick={() => installApp.mutate()}
+                    disabled={installApp.isPending}
+                    className="border-amber-500/40 text-amber-200 hover:bg-amber-500/10">
+                    {installApp.isPending
+                      ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      : <Link2 className="w-4 h-4 mr-2" />}
+                    Install GitHub App
+                  </Button>
+                  <Button size="sm" onClick={() => connect.mutate()} disabled={connect.isPending}
+                    className="bg-amber-500 hover:bg-amber-400 text-slate-950">
+                    {connect.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Link2 className="w-4 h-4 mr-2" />}
+                    Connect GitHub
+                  </Button>
+                </div>
               )}
             </div>
           </Card>
