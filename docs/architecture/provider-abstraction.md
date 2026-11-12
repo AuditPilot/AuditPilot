@@ -204,10 +204,10 @@ that invariant); revoked connections → `ProviderConnection.status="revoked"` +
 |---|---|---|---|
 | listPullRequests.allAuthors | ✅ `/repos/{o}/{r}/pulls` | ✅ | ✅ `pullrequests?pagelen=` |
 | listPullRequests.stateMerged | ✅ (state=closed + merged_at) | ✅ | ✅ state=MERGED |
-| pullRequests.draft | ✅ draft field | ✅ | ❌ (M5: map to none) |
+| pullRequests.draft | ✅ draft field | ✅ | ❌ shipped: filter ignored, `isDraft` always false, `createPullRequest` drops `draft` (capability-checked no-op) |
 | pullRequests.comments | ✅ issues comments + review comments | ✅ | ✅ |
-| checks.status | ✅ combined status + check-runs | ✅ | ⚠️ commit status endpoint |
-| webhooks | ✅ repo webhook + App-level | ✅ | ✅ |
+| checks.status | ✅ combined status + check-runs | ✅ | ✅ shipped: commit-status endpoint (`repo:commit_status_*` webhooks → normalized check state) |
+| webhooks | ✅ repo webhook + App-level | ✅ | ✅ shipped: `X-Event-Key`/`X-Signature`/`X-Request-UUID` intake |
 | mergePullRequest | ✅ squash/merge/rebase | ✅ | ✅ (docs-driven) |
 | commit.multiFile | ✅ single commit multi-file (via git trees) or per-file commits | ✅ | ✅ |
 | repos.listPaginated | ✅ | ✅ | ✅ |
@@ -225,8 +225,12 @@ differences never appear outside `integrations/source-control/`.
    delete author-restricted query. Contract tests over fixtures (mocked transport).
 2. **M3 (GitHub App):** auth.ts + installations.ts + webhooks.ts; `GITHUB_AUTH_MODE=app` boot
    verification; ledger-based webhook processing per target-architecture §4.
-3. **M5 (Bitbucket Cloud):** second adapter, OAuth refresh logic, capability map as above; PR sync
-   and audits workspace-agnostic behind the same factory.
+3. **M5 (Bitbucket Cloud) — shipped:** `BitbucketProvider` (REST 2.0) + `auth.ts` (state roundtrip,
+   code exchange, silent refresh, unbraced-uuid account fetch) + `webhooks.ts` (event normalization
+   incl. `action`; pullrequest:updated → synchronize for fresh-head reviews). Transparent refresh
+   lives in provider resolution (2-min margin; failed refresh → connection `error` + truthful
+   400). Register dialog lists both providers via `GET /workspaces/:id/provider-repos`; sync works
+   for Bitbucket repos; audits remain GitHub-only until the M6 staged engine.
 
 Battle-tested invariant to carry forward: the AI prompt layer consumes normalized
 `ScmPullRequestFile` where `patch === null` renders as *"patch omitted (file unchanged/too large)"*

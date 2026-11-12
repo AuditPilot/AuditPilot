@@ -354,6 +354,44 @@ export const api = {
     return res.json();
   },
 
+  // --- Bitbucket Cloud connect flow (M5) ---
+
+  async getBitbucketAuthorizeUrl(workspaceId: string) {
+    const res = await fetch(`${API_BASE}/api/workspaces/${workspaceId}/bitbucket/authorize-url`, { ...cred });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({} as { message?: string }));
+      throw new Error(body.message || "Bitbucket is not configured on this deployment");
+    }
+    return res.json() as Promise<{ authorizeUrl: string; state: string }>;
+  },
+
+  async completeBitbucketConnection(workspaceId: string, payload: { code: string; state: string }) {
+    const res = await fetch(`${API_BASE}/api/workspaces/${workspaceId}/bitbucket/complete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      ...cred,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({} as { message?: string }));
+      throw new Error(body.message || "Failed to complete the Bitbucket connection");
+    }
+    return res.json() as Promise<{ connection: ProviderConnectionSummary }>;
+  },
+
+  /** Lists repositories from the workspace's connected provider account. */
+  async getProviderRepos(workspaceId: string, provider: "github" | "bitbucket") {
+    const res = await fetch(
+      `${API_BASE}/api/workspaces/${workspaceId}/provider-repos?provider=${provider}`,
+      { ...cred },
+    );
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({} as { message?: string }));
+      throw new Error(body.message || "Failed to fetch repositories from the provider");
+    }
+    return res.json() as Promise<{ provider: string; repositories: ProviderRepoCandidate[] }>;
+  },
+
   async getWorkspaceRepositories(workspaceId: string) {
     const res = await fetch(`${API_BASE}/api/workspaces/${workspaceId}/repositories`, { ...cred });
     if (!res.ok) throw new Error("Failed to fetch workspace repositories");
@@ -515,6 +553,18 @@ export interface ProviderConnectionSummary {
   providerAccountId: string;
   providerAccountLogin: string | null;
   status: string;
+}
+
+export interface ProviderRepoCandidate {
+  provider: "github" | "bitbucket";
+  providerExternalId: string;
+  owner: string;
+  fullName: string;
+  name: string;
+  description: string | null;
+  visibility: "public" | "private" | "internal";
+  archived: boolean;
+  defaultBranch: string | null;
 }
 
 export interface WorkspaceRepository {

@@ -132,6 +132,43 @@ export function useRegisterWorkspaceRepository(workspaceId: string) {
   });
 }
 
+// --- Bitbucket Cloud connect flow (M5) ---
+
+export function useBitbucketAuthorizeUrl(workspaceId: string) {
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async () => api.getBitbucketAuthorizeUrl(workspaceId),
+    onSuccess: (data) => {
+      window.location.href = data.authorizeUrl;
+    },
+    onError: (err) => {
+      toast({
+        title: "Cannot start the Bitbucket connect flow",
+        description: err instanceof Error ? err.message : "Unexpected error",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useCompleteBitbucketConnection(workspaceId: string) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (payload: { code: string; state: string }) =>
+      api.completeBitbucketConnection(workspaceId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workspace-connections", workspaceId] });
+      toast({
+        title: "Bitbucket Cloud connected",
+        description: "This workspace can now sync repositories from your Bitbucket account.",
+      });
+    },
+  });
+}
+
 export function useWorkspaceRepoPulls(workspaceId: string, repoId: string, state: string, page: number) {
   return useQuery<PullListResponse>({
     queryKey: ["workspace-repo-pulls", workspaceId, repoId, state, page],

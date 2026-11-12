@@ -12,7 +12,7 @@
 | M2 | Provider abstraction (GitHub) + repo-centric experience + full PR visibility + global PR inbox | P0/P1 | Planned | |
 | M3 | GitHub App, permissions, webhooks, event-driven sync + reconciliation | P1 | Planned | |
 | M4 | Persistent findings lifecycle, dedupe, audit comparison, health score | P1 | Planned | |
-| M5 | Bitbucket Cloud adapter + cross-provider dashboard | P1 | Planned | |
+| M5 | Bitbucket Cloud adapter + cross-provider dashboard | P1 | Done | Both repos |
 | M6 | Staged AI audit engine (static-first, tiers, fingerprints ground truth) | P1 | Planned | |
 | M7 | Safe remediation v2 (anchor validation, stale-SHA, verification, regression flags) | P1 | Planned | |
 | M8 | Team collaboration (invites, roles UX, assignments, activity) + reports surface | P1/P2 | Planned | |
@@ -221,12 +221,20 @@ duplicate); regression test proves re-detection links to the fixed Finding; scor
   build clean (222.3kb API bundle). Same gate caveat: repo-wide lint fails only in the user's
   uncommitted `auth/service.ts` WIP; findings module lints clean.
 
-## M5 — Bitbucket Cloud (P1)
+## M5 — Bitbucket Cloud (P1) — Done
 
 - Second adapter (OAuth w/ refresh, capability map), branch/bitbucket-webhook support, cross-provider
   docs + `.env.example` update.
 **Acceptance:** workspace with both providers shows both repos in one inbox; provider gating tests
 prove non-available capabilities route to capability-checked no-ops with truthful UI copy.
+**Shipped:** `BitbucketProvider` behind the SCM contract (`checks.status` yes, PR-draft no —
+capability-checked no-ops with truthful copy), OAuth 2.0 connect flow with signed state + silent
+token refresh inside provider resolution, Bitbucket webhook intake (`X-Event-Key`/`X-Signature`/
+`X-Request-UUID`; pullrequest:updated → fresh-head AI reviews), provider-aware webhook processor +
+pr-review worker, `GET /workspaces/:id/provider-repos`, provider tabs in the register dialog,
+Bitbucket connect banner + OAuth callback route, Bitbucket repos enabled for sync (audits stay
+GitHub-only until the M6 staged engine). Tests: 46 new (provider contract, auth/webhook helpers,
+intake/processor end-to-end, transparent refresh) — API 186/186; SPA check/lint/build green.
 
 ## M6 — Staged audit engine (P1)
 

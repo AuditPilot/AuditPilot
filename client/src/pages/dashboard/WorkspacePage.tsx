@@ -10,17 +10,20 @@ import { Badge } from "@/components/ui/badge";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import DashboardLayout from "./DashboardLayout";
 import {
   useWorkspace, useWorkspaceConnections, useConnectWorkspaceGithub,
   useWorkspaceRepositories, useSyncWorkspaceRepository, useRegisterWorkspaceRepository,
-  useGithubAppInstallUrl,
+  useGithubAppInstallUrl, useBitbucketAuthorizeUrl,
 } from "@/hooks/use-workspaces";
-import { api } from "@/lib/api-service";
+import { api, type ProviderRepoCandidate } from "@/lib/api-service";
 import { SyncStateBadge, VisibilityBadge, timeAgo } from "./workspace/shared";
 
+type ProviderTab = "github" | "bitbucket";
+
 interface RegisterCandidate {
-  provider: "github";
+  provider: ProviderTab;
   providerExternalId: string;
   ownerAccount: string;
   fullName: string;
@@ -44,32 +47,31 @@ export default function WorkspacePage() {
   const [candidateError, setCandidateError] = useState<string | null>(null);
   const [candidatesLoading, setCandidatesLoading] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
+  const [registerTab, setRegisterTab] = useState<ProviderTab>("github");
 
   const sync = useSyncWorkspaceRepository(wsId);
   const register = useRegisterWorkspaceRepository(wsId);
   const connect = useConnectWorkspaceGithub(wsId);
   const installApp = useGithubAppInstallUrl(wsId);
+  const connectBitbucket = useBitbucketAuthorizeUrl(wsId);
 
-  const githubConnection = connections?.find(c => c.provider === "github");
+  const githubConnection = connections?.find(c => c.provider === "github" && c.kind !== "github-app");
   const appConnection = connections?.find(c => c.provider === "github" && c.kind === "github-app");
+  const bitbucketConnection = connections?.find(c => c.provider === "bitbucket");
 
-  const openRegister = async () => {
-    setRegisterOpen(true);
+  const loadCandidates = async (provider: ProviderTab) => {
     setCandidateError(null);
     setCandidatesLoading(true);
     try {
-      const repos = (await api.getRepos()) as Array<{
-        provider: string; providerExternalId: string; ownerLogin: string; fullName: string;
-        name: string; visibility: string; archived: boolean; defaultBranch: string | null;
-      }>;
+      const { repositories: repos } = await api.getProviderRepos(wsId, provider);
       const registered = new Set((repositories ?? []).map(r => r.fullName));
       setCandidateRepos(
         repos
           .filter(r => !registered.has(r.fullName))
           .map(r => ({
-            provider: "github" as const,
+            provider,
             providerExternalId: r.providerExternalId,
-            ownerAccount: r.ownerLogin,
+            ownerAccount: r.owner,
             fullName: r.fullName,
             name: r.name,
             visibility: (r.visibility || "public") as RegisterCandidate["visibility"],
@@ -78,11 +80,27 @@ export default function WorkspacePage() {
           })),
       );
     } catch (err) {
-      setCandidateError(err instanceof Error ? err.message : "Failed to load repositories from GitHub");
+      setCandidateError(err instanceof Error ? err.message : `Failed to load repositories from ${provider === "github" ? "GitHub" : "Bitbucket"}`);
+      setCandidateRepos(null);
     } finally {
       setCandidatesLoading(false);
     }
   };
+
+  const openRegister = async () => {
+    setRegisterOpen(true);
+    setCandidateRepos(null);
+    await loadCandidates(registerTab);
+  };
+
+  const switchRegisterTab = async (provider: ProviderTab) => {
+    setRegisterTab(provider);
+    setCandidateRepos(null);
+    await loadCandidates(provider);
+  };
+
+  const connectionFor = (provider: ProviderTab) =>
+    provider === "github" ? githubConnection ?? appConnection ?? null : bitbucketConnection ?? null;
 
   const canManage = workspace?.role === "owner" || workspace?.role === "admin" || workspace?.role === "developer";
   const isAdmin = workspace?.role === "owner" || workspace?.role === "admin";
@@ -162,9 +180,9 @@ export default function WorkspacePage() {
                   <div className="flex items-center justify-end gap-2">
                     <Button
                       size="sm" variant="ghost"
-                      disabled={sync.isPending || repo.provider !== "github"}
+                      disabled={sync.isPending}
                       onClick={() => sync.mutate(repo.id)}
-                      title={repo.provider !== "github" ? "Sync is GitHub-only until the Bitbucket adapter ships" : "Sync from GitHub"}
+                      title={`Sync from ${repo.provider === "bitbucket" ? "Bitbucket" : "GitHub"}`}
                       className="text-slate-300 hover:text-indigo-300 hover:bg-indigo-500/10"
                     >
                       {sync.isPending && sync.variables === repo.id
@@ -242,6 +260,33 @@ export default function WorkspacePage() {
           </Card>
         )}
 
+        {canManage && !bitbucketConnection && (
+          <Card className="p-5 mb-6 border-sky-500/20 bg-sky-500/5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-sky-400 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-sky-200">Bitbucket Cloud is not connected to this workspace</p>
+                  <p className="text-xs text-sky-200/70 mt-1">
+                    {isAdmin
+                      ? "Connect your Atlassian account to register Bitbucket repositories — sync and PR mirroring use the workspace-level connection."
+                      : "Ask a workspace admin to connect Bitbucket Cloud — syncing and PR mirroring need a workspace-level connection."}
+                  </p>
+                </div>
+              </div>
+              {isAdmin && (
+                <Button size="sm" onClick={() => connectBitbucket.mutate()} disabled={connectBitbucket.isPending}
+                  className="bg-sky-500 hover:bg-sky-400 text-slate-950 shrink-0">
+                  {connectBitbucket.isPending
+                    ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    : <Link2 className="w-4 h-4 mr-2" />}
+                  Connect Bitbucket
+                </Button>
+              )}
+            </div>
+          </Card>
+        )}
+
         {table}
 
         {/* Register dialog */}
@@ -250,46 +295,58 @@ export default function WorkspacePage() {
             <DialogHeader>
               <DialogTitle>Register repository</DialogTitle>
               <DialogDescription>
-                Pick a repository from your GitHub account. Its metadata and pull requests sync into this workspace.
+                Pick a repository from your connected provider account. Its metadata and pull requests sync into this workspace.
               </DialogDescription>
             </DialogHeader>
-            <div className="py-2 max-h-80 overflow-y-auto pr-2 space-y-2">
-              {candidatesLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-6 h-6 text-indigo-400 animate-spin" />
-                </div>
-              ) : candidateError ? (
-                <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 p-4 text-sm text-rose-300">
-                  {candidateError}
-                </div>
-              ) : !githubConnection ? (
-                <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-300">
-                  Connect GitHub to this workspace first (banner above), then reopen this dialog.
-                </div>
-              ) : (candidateRepos?.length ?? 0) === 0 ? (
-                <div className="rounded-lg border border-white/10 bg-white/5 p-4 text-sm text-slate-400">
-                  All of your GitHub repositories are already registered.
-                </div>
-              ) : (
-                candidateRepos!.map(candidate => (
-                  <button
-                    key={candidate.providerExternalId}
-                    disabled={register.isPending}
-                    onClick={() => register.mutate(
-                      { ...candidate, providerConnectionId: githubConnection.id },
-                      { onSuccess: () => setRegisterOpen(false) },
-                    )}
-                    className="w-full flex items-center justify-between p-3 rounded-lg border border-white/10 hover:border-indigo-500/40 hover:bg-indigo-500/10 text-left transition-all"
-                  >
-                    <div>
-                      <div className="text-sm font-medium text-slate-200">{candidate.fullName}</div>
-                      <div className="text-xs text-slate-500 capitalize">{candidate.visibility}</div>
+            <Tabs value={registerTab} onValueChange={v => switchRegisterTab(v as ProviderTab)}>
+              <TabsList className="w-full">
+                <TabsTrigger value="github" className="flex-1">GitHub</TabsTrigger>
+                <TabsTrigger value="bitbucket" className="flex-1">Bitbucket</TabsTrigger>
+              </TabsList>
+              <TabsContent value={registerTab} className="mt-2">
+                <div className="max-h-80 overflow-y-auto pr-2 space-y-2">
+                  {candidatesLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="w-6 h-6 text-indigo-400 animate-spin" />
                     </div>
-                    <Plus className="w-4 h-4 text-indigo-400" />
-                  </button>
-                ))
-              )}
-            </div>
+                  ) : candidateError ? (
+                    <div className="rounded-lg border border-rose-500/20 bg-rose-500/10 p-4 text-sm text-rose-300">
+                      {candidateError}
+                    </div>
+                  ) : !connectionFor(registerTab) ? (
+                    <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-300">
+                      {registerTab === "bitbucket"
+                        ? "Connect Bitbucket Cloud to this workspace first (banner above), then reopen this tab."
+                        : "Connect GitHub to this workspace first (banner above), then reopen this tab."}
+                    </div>
+                  ) : (candidateRepos?.length ?? 0) === 0 ? (
+                    <div className="rounded-lg border border-white/10 bg-white/5 p-4 text-sm text-slate-400">
+                      {registerTab === "bitbucket"
+                        ? "All of your Bitbucket repositories are already registered."
+                        : "All of your GitHub repositories are already registered."}
+                    </div>
+                  ) : (
+                    candidateRepos!.map(candidate => (
+                      <button
+                        key={candidate.providerExternalId}
+                        disabled={register.isPending}
+                        onClick={() => register.mutate(
+                          { ...candidate, providerConnectionId: connectionFor(registerTab)!.id },
+                          { onSuccess: () => loadCandidates(registerTab) },
+                        )}
+                        className="w-full flex items-center justify-between p-3 rounded-lg border border-white/10 hover:border-indigo-500/40 hover:bg-indigo-500/10 text-left transition-all"
+                      >
+                        <div>
+                          <div className="text-sm font-medium text-slate-200">{candidate.fullName}</div>
+                          <div className="text-xs text-slate-500 capitalize">{candidate.visibility}</div>
+                        </div>
+                        <Plus className="w-4 h-4 text-indigo-400" />
+                      </button>
+                    ))
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
             <DialogFooter>
               <Button variant="outline" onClick={() => setRegisterOpen(false)}>Close</Button>
             </DialogFooter>
