@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/api-service";
-import type { PullListResponse } from "@/lib/api-service";
+import type { PullListResponse, RepoFindingsResponse, RepoHealthResponse, RepoAuditSummary, RepoAuditCompareResponse } from "@/lib/api-service";
 
 export function useWorkspaces() {
   return useQuery({
@@ -145,5 +145,39 @@ export function useWorkspacePulls(workspaceId: string, state: string, page: numb
     queryKey: ["workspace-pulls", workspaceId, state, page],
     queryFn: () => api.getWorkspacePulls(workspaceId, { state, page }),
     enabled: !!workspaceId,
+  });
+}
+
+// --- Findings lifecycle + repo audits + health (M4) ---
+
+export function useRepoFindings(workspaceId: string, repoId: string, status: string, severity: string) {
+  return useQuery<RepoFindingsResponse>({
+    queryKey: ["repo-findings", workspaceId, repoId, status, severity],
+    queryFn: () => api.getRepoFindings(workspaceId, repoId, { status, severity }),
+    enabled: !!workspaceId && !!repoId,
+  });
+}
+
+export function useRepoHealth(workspaceId: string, repoId: string) {
+  return useQuery<RepoHealthResponse>({
+    queryKey: ["repo-health", workspaceId, repoId],
+    queryFn: () => api.getRepoHealth(workspaceId, repoId),
+    enabled: !!workspaceId && !!repoId,
+  });
+}
+
+export function useRepoAudits(workspaceId: string, repoId: string) {
+  return useQuery<{ repository: { id: string; fullName: string }; audits: RepoAuditSummary[] }>({
+    queryKey: ["repo-audits", workspaceId, repoId],
+    queryFn: () => api.getRepoAudits(workspaceId, repoId),
+    enabled: !!workspaceId && !!repoId,
+  });
+}
+
+export function useRepoAuditCompare(workspaceId: string, repoId: string, base?: string, target?: string) {
+  return useQuery<RepoAuditCompareResponse>({
+    queryKey: ["repo-audit-compare", workspaceId, repoId, base, target],
+    queryFn: () => api.compareRepoAudits(workspaceId, repoId, base!, target!),
+    enabled: !!workspaceId && !!repoId && !!base && !!target && base !== target,
   });
 }

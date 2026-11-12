@@ -417,6 +417,56 @@ export const api = {
     const res = await fetch(`${API_BASE}/api/workspaces/${workspaceId}/pulls?${q}`, { ...cred });
     if (!res.ok) throw new Error("Failed to fetch pull requests");
     return res.json() as Promise<PullListResponse>;
+  },
+
+  // --- Findings lifecycle + repo audits + health (M4) ---
+
+  async getRepoFindings(
+    workspaceId: string,
+    repoId: string,
+    params: { status?: string; severity?: string; limit?: number; skip?: number } = {},
+  ) {
+    const q = new URLSearchParams();
+    if (params.status) q.set("status", params.status);
+    if (params.severity) q.set("severity", params.severity);
+    if (params.limit) q.set("limit", String(params.limit));
+    if (params.skip) q.set("skip", String(params.skip));
+    const res = await fetch(
+      `${API_BASE}/api/workspaces/${workspaceId}/repositories/${repoId}/findings?${q}`,
+      { ...cred },
+    );
+    if (!res.ok) throw new Error("Failed to fetch repository findings");
+    return res.json() as Promise<RepoFindingsResponse>;
+  },
+
+  async getRepoHealth(workspaceId: string, repoId: string) {
+    const res = await fetch(
+      `${API_BASE}/api/workspaces/${workspaceId}/repositories/${repoId}/health`,
+      { ...cred },
+    );
+    if (!res.ok) throw new Error("Failed to fetch repository health");
+    return res.json() as Promise<RepoHealthResponse>;
+  },
+
+  async getRepoAudits(workspaceId: string, repoId: string) {
+    const res = await fetch(
+      `${API_BASE}/api/workspaces/${workspaceId}/repositories/${repoId}/audits`,
+      { ...cred },
+    );
+    if (!res.ok) throw new Error("Failed to fetch repository audits");
+    return res.json() as Promise<{ repository: { id: string; fullName: string }; audits: RepoAuditSummary[] }>;
+  },
+
+  async compareRepoAudits(workspaceId: string, repoId: string, base: string, target: string) {
+    const res = await fetch(
+      `${API_BASE}/api/workspaces/${workspaceId}/repositories/${repoId}/audits/compare?base=${encodeURIComponent(base)}&target=${encodeURIComponent(target)}`,
+      { ...cred },
+    );
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({} as { message?: string }));
+      throw new Error(body.message || "Failed to compare the two audits");
+    }
+    return res.json() as Promise<RepoAuditCompareResponse>;
   }
 };
 
@@ -504,4 +554,73 @@ export interface PullListResponse {
   page: number;
   hasNext: boolean;
   repository?: { id: string; fullName: string };
+}
+
+// --- Findings lifecycle shapes (M4) ---
+
+export interface RepoFinding {
+  _id: string;
+  fingerprint: string;
+  severity: "critical" | "high" | "medium" | "low";
+  category: string;
+  filePath: string;
+  lineStart: number | null;
+  description: string;
+  recommendation: string | null;
+  status: string;
+  regression: boolean;
+  regressionCount: number;
+  firstDetectedAt: string;
+  lastDetectedAt: string;
+  resolvedAt: string | null;
+  auditId: string | null;
+}
+
+export interface RepoFindingsResponse {
+  repository: { id: string; fullName: string; defaultBranch: string | null };
+  findings: RepoFinding[];
+  total: number;
+  counts: Record<string, number>;
+}
+
+export interface RepoHealthResponse {
+  repository: { id: string; fullName: string };
+  score: number | null;
+  status: "unaudited" | "stale" | "current";
+  weightedOpen: number;
+  openCounts: Record<string, number>;
+  regressions: number;
+  lastAudit: { at: string; branch: string | null; commitSha: string | null } | null;
+  formula: { saturation: number; weights: Record<string, number>; staleDays: number; note: string };
+}
+
+export interface RepoAuditSummary {
+  id: string;
+  title: string;
+  status: string;
+  priority: string;
+  branch: string;
+  commitSha: string | null;
+  createdAt: string;
+  itemCount: number;
+  fingerprintCount: number;
+}
+
+export interface RepoAuditCompareItem {
+  fingerprint: string;
+  label: string;
+  type: string;
+  severity: string;
+  filePath: string | null;
+  oldCode: string | null;
+  findingId: string | null;
+}
+
+export interface RepoAuditCompareResponse {
+  base: { id: string; title: string; createdAt: string; branch: string; commitSha: string | null };
+  target: { id: string; title: string; createdAt: string; branch: string; commitSha: string | null };
+  stillPresent: RepoAuditCompareItem[];
+  newInTarget: RepoAuditCompareItem[];
+  resolvedInTarget: RepoAuditCompareItem[];
+  counts: { stillPresent: number; newInTarget: number; resolvedInTarget: number };
 }

@@ -184,6 +184,43 @@ user rebased the workspace onto that branch, same lineage M1 → M2 → M3):**
 **Acceptance:** same finding detected in two consecutive audits = one Finding row (update, not
 duplicate); regression test proves re-detection links to the fixed Finding; score formula published.
 
+**Status (M4 complete — backend API @ `5e1e8df`, frontend SPA, both gated):**
+- [x] Fingerprints: `modules/findings/fingerprint.ts` — `v1:<sha256[:32]>` over
+  (separator/case-normalized path, issue class, first-meaningful-line anchor of the excerpt,
+  whitespace-normalized) — stable across runs, best-effort stable across minor file churn;
+  description fallback when no excerpt exists.
+- [x] Lifecycle engine (`recordFindingsForAudit`): unique `{repositoryId, fingerprint}` spine —
+  unseen → create (open); open/in_progress/reopened re-detection → `lastDetectedAt` + auditId bump;
+  fixed/verified re-detection → **reopened** + `regression=true` + `regressionCount++` +
+  `resolvedAt` cleared; accepted_risk/ignored detections only bump visibility timestamps (the
+  human's decision stands). In-run duplicates collapse; create races on the unique index retry as
+  updates. `Finding` gained `regression`/`regressionCount`; `AuditItem` gained `fingerprint` +
+  `findingId` (additive; legacy rows stay null).
+- [x] Audit binding: `runRepoAudit` resolves the (owner, name) pair against repositories registered
+  in the caller's ACTIVE workspaces; bound audits stamp `workspaceId/repositoryId/provider/
+  commitSha/auditType=repo_full` and feed the lifecycle (line numbers recovered from exact
+  snippet anchors). Unbound audits stay legacy user-scoped with zero Finding writes — the audits
+  page states this explicitly.
+- [x] Audit comparison: `GET /workspaces/:wsId/repositories/:repoId/audits/compare?base&target` —
+  diffs the two runs' item fingerprint sets into still-present / appeared / disappeared
+  (candidate-resolved); legacy audits (no fingerprints) answer an explicit 400, not an empty diff.
+- [x] Health score (PUBLISHED): `score = clamp(round(100 − 100·weightedOpen/24), 0, 100)` with
+  weights critical 8 / high 4 / medium 2 / low 1 over open|in_progress|reopened. Missing data is
+  NEVER healthy — score is `null` + status `unaudited` until the first completed repo audit;
+  audits older than 30 days flag `stale` without hiding the score.
+- [x] Endpoints (viewer+ membership): findings list w/ per-status counts + severity filters,
+  repository-bound audit list (with per-audit item/fingerprint counts), comparison, health.
+- [x] Frontend: findings tab (lifecycle badges, regression flags, status/severity filters fed by
+  real counts), audits tab (history + compare UI over three count cards and diff lists), health
+  card on the repo overview (score, status, formula note). The M2 `_NON-DONE` placeholders are
+  gone.
+- [x] Tests: +20 (`findings.test.ts`) — fingerprint determinism/churn/versioning, all lifecycle
+  transitions, the full `runRepoAudit` wiring end-to-end (AI gateway mocked, GitHub stubbed),
+  re-detection across runs, health formula/staleness/unaudited, compare diffs incl. legacy
+  rejection + cross-repo 404, HTTP membership gates. **140/140 passing** (120 → 140); tsc/lint/
+  build clean (222.3kb API bundle). Same gate caveat: repo-wide lint fails only in the user's
+  uncommitted `auth/service.ts` WIP; findings module lints clean.
+
 ## M5 — Bitbucket Cloud (P1)
 
 - Second adapter (OAuth w/ refresh, capability map), branch/bitbucket-webhook support, cross-provider

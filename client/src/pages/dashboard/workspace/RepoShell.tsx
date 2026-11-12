@@ -16,7 +16,7 @@ type Tab = (typeof TABS)[number];
 
 /**
  * Repository shell — the workspace-aware repo area with four tabs
- * (roadmap M2: overview / pulls now; audits / findings land in M4).
+ * (overview / pulls / audits / findings; audits + findings landed in M4).
  */
 export default function RepoShell() {
   const params = useParams<{ wsId: string; repoId: string; tab?: string }>();
@@ -89,8 +89,8 @@ export default function RepoShell() {
 
         {activeTab === "overview" && <RepoOverviewPage wsId={wsId} repo={repo} />}
         {activeTab === "pulls" && <RepoPullsPage wsId={wsId} repoId={repoId} />}
-        {activeTab === "audits" && <RepoAuditsPage />}
-        {activeTab === "findings" && <RepoFindingsPage />}
+        {activeTab === "audits" && <RepoAuditsPage wsId={wsId} repoId={repoId} />}
+        {activeTab === "findings" && <RepoFindingsPage wsId={wsId} repoId={repoId} />}
       </motion.div>
     </DashboardLayout>
   );

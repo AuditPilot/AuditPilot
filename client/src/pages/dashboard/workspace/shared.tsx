@@ -35,6 +35,39 @@ export function VisibilityBadge({ visibility }: { visibility: string }) {
   );
 }
 
+/** Severity badge — same palette as the audit item severity pills. */
+export function SeverityBadge({ severity }: { severity: string }) {
+  const map: Record<string, string> = {
+    critical: "bg-rose-500/10 text-rose-300 border-none",
+    high: "bg-orange-500/10 text-orange-300 border-none",
+    medium: "bg-amber-500/10 text-amber-300 border-none",
+    low: "bg-slate-500/10 text-slate-400 border-none",
+  };
+  return (
+    <Badge variant="secondary" className={cn("capitalize", map[severity] ?? "bg-slate-500/10 text-slate-400 border-none")}>
+      {severity}
+    </Badge>
+  );
+}
+
+/** Finding lifecycle status badge — open states glow, resolved states go quiet. */
+export function FindingStatusBadge({ status }: { status: string }) {
+  const map: Record<string, string> = {
+    open: "bg-rose-500/10 text-rose-300 border-none",
+    reopened: "bg-orange-500/10 text-orange-300 border-none",
+    in_progress: "bg-amber-500/10 text-amber-300 border-none",
+    fixed: "bg-emerald-500/10 text-emerald-300 border-none",
+    verified: "bg-emerald-500/10 text-emerald-300 border-none",
+    accepted_risk: "bg-slate-500/10 text-slate-400 border-none",
+    ignored: "bg-slate-500/10 text-slate-400 border-none",
+  };
+  return (
+    <Badge variant="secondary" className={cn("capitalize", map[status] ?? "bg-slate-500/10 text-slate-400 border-none")}>
+      {status.replace(/_/g, " ")}
+    </Badge>
+  );
+}
+
 export function timeAgo(iso: string | null | undefined): string {
   if (!iso) return "never";
   const then = new Date(iso).getTime();
