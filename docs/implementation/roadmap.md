@@ -13,7 +13,7 @@
 | M3 | GitHub App, permissions, webhooks, event-driven sync + reconciliation | P1 | Planned | |
 | M4 | Persistent findings lifecycle, dedupe, audit comparison, health score | P1 | Planned | |
 | M5 | Bitbucket Cloud adapter + cross-provider dashboard | P1 | Done | Both repos |
-| M6 | Staged AI audit engine (static-first, tiers, fingerprints ground truth) | P1 | Planned | |
+| M6 | Staged AI audit engine (static-first, tiers, fingerprints ground truth) | P1 | Done | |
 | M7 | Safe remediation v2 (anchor validation, stale-SHA, verification, regression flags) | P1 | Planned | |
 | M8 | Team collaboration (invites, roles UX, assignments, activity) + reports surface | P1/P2 | Planned | |
 | M9 | Workspace-aware billing, usage metering, cost controls, plan enforcement | P0/P1 | Planned | |
@@ -236,7 +236,7 @@ Bitbucket connect banner + OAuth callback route, Bitbucket repos enabled for syn
 GitHub-only until the M6 staged engine). Tests: 46 new (provider contract, auth/webhook helpers,
 intake/processor end-to-end, transparent refresh) — API 186/186; SPA check/lint/build green.
 
-## M6 — Staged audit engine (P1)
+## M6 — Staged audit engine (P1) — Done
 
 - Stage pipeline per target-architecture §5 (discovery → classification → deps → secrets → static →
   AI-chunks → validation → fingerprints → reports). Evaluate Semgrep/Gitleaks/OSV (licensing, ops cost,
@@ -245,6 +245,22 @@ intake/processor end-to-end, transparent refresh) — API 186/186; SPA check/lin
 **Acceptance:** audit on a 1k-file repo completes with bounded cost (recorded), deterministic scanners
 produce findings the AI does not need to discover, AIUsage tracks stage-level cost; report rows
 finally readable via UI.
+**Shipped:** provider-agnostic SCM `listTree` (recursive, truncated flag, headSha incl. Bitbucket
+fallback via listCommits); staged engine (docs/architecture/audit-engine.md) — discovery → classify →
+dependencies (OSV) → secrets → static → heuristics → ai-chunks (triage/deep) → validation →
+fingerprinting with a persisted stage log (status/detail/error/AI calls per stage; scanner stages
+degrade without aborting, unstartable repos fail loudly); deterministic scanners (10 secret rules
+with redacted excerpts, 12 static rules, repo heuristics) so findings never depend on the AI; AI
+findings anchored to real tree paths (exact → suffix → basename) and dropped otherwise; OSV
+dependency scan for npm/Go/PyPI/Packagist pins with budgeted cached queries and counted failures
+(never fabricated clean); budget knobs via AUDIT_* env (tree 10k, 40 files, 3k chars, 6 triage + 4
+deep calls, 30 OSV deps); gateway tasks `repo-audit:triage`/`repo-audit:deep` route triage vs deep
+models with stage-tagged AIUsage rows; audits unblocked for Bitbucket (remediation still
+GitHub-only); repo audits resolve their provider from the repository mirror (workspace connection,
+else user connection). SPA: real stage progress on the progress page (job.stage/message), report
+page "How this audit ran" stage-log + scan-summary panel, per-finding file anchor + provenance
+(rule/source/confidence), "Suggested fix" relabel. Tests: engine unit (classify/scanners/chunker/
+OSV), pipeline integration, gateway task→model matrix — API 241/241; SPA check/lint/build green.
 
 ## M7 — Safe remediation v2 (P1)
 

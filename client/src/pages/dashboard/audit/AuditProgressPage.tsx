@@ -15,14 +15,18 @@ export default function AuditProgressPage() {
   const { owner = "", repo = "", branch = "" } = useParams<{ owner: string, repo: string, branch: string }>();
   const [progress, setProgress] = useState(3);
   const [stage, setStage] = useState(0);
+  const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const setLocation = useLocation()[1];
 
+  // Visual stages map 1:1 onto the staged engine's progress phases (M6):
+  // fetching → discovery/classify/dependencies, analyzing → scanners + AI
+  // chunks, verifying → validation/fingerprinting + persistence.
   const stages = [
-    { label: "Scanning File Tree", icon: Code2 },
-    { label: "Fetching Security Configs", icon: Shield },
-    { label: "Running AI Analysis", icon: Eye },
-    { label: "Finalizing Results", icon: Zap },
+    { label: "Scanning File Tree", icon: Code2, phase: "fetching" },
+    { label: "Fetching Security Configs", icon: Shield, phase: "analyzing" },
+    { label: "Running AI Analysis", icon: Eye, phase: "analyzing" },
+    { label: "Finalizing Results", icon: Zap, phase: "verifying" },
   ];
 
   useEffect(() => {
@@ -51,13 +55,19 @@ export default function AuditProgressPage() {
               return;
             }
             if (job.state === "failed") {
-              setError(job.message || "Audit job failed — please try again.");
+              setError(job.message || job.error || "Audit job failed — please try again.");
               return; // stop polling
             }
 
             const serverPercent = typeof job.percent === "number" ? job.percent : 0;
             localCreep = Math.min(Math.max(localCreep + 1, serverPercent), 95);
             setProgress(localCreep);
+            if (typeof job.message === "string" && job.message) setMessage(job.message);
+            // Stage index follows the engine's real phase, not a timer:
+            // fetching=0, analyzing=1 (AI starts past 60%), verifying=3.
+            if (job.stage === "fetching") setStage(0);
+            if (job.stage === "analyzing") setStage(serverPercent > 60 ? 2 : 1);
+            if (job.stage === "verifying") setStage(3);
             timer = setTimeout(poll, 1500);
           } catch {
             // transient network / db hiccup — retry with a wider interval
@@ -83,12 +93,6 @@ export default function AuditProgressPage() {
       if (timer) clearTimeout(timer);
     };
   }, [owner, repo, branch]);
-
-  useEffect(() => {
-    if (progress > 25) setStage(1);
-    if (progress > 50) setStage(2);
-    if (progress > 85) setStage(3);
-  }, [progress]);
 
   return (
     <DashboardLayout>
@@ -116,6 +120,9 @@ export default function AuditProgressPage() {
                   <span className="text-sm font-medium text-slate-500">{progress}%</span>
                 </div>
                 <Progress value={progress} className="h-2" />
+                {message && (
+                  <p className="mt-2 text-xs text-slate-500 font-mono truncate" aria-live="polite">{message}</p>
+                )}
               </div>
 
               <div className="space-y-4">
