@@ -76,13 +76,35 @@ export const api = {
     return res.json();
   },
 
-  async getBranches(owner: string, repo: string) {
+  async getBranches(owner: string, repo: string): Promise<string[]> {
     const res = await fetch(`${API_BASE}/api/repos/${owner}/${repo}/branches`, { ...cred });
     if (!res.ok) {
       const body = await res.json().catch(() => ({} as { message?: string }));
       throw new Error(body.message || "Failed to fetch branches");
     }
-    return res.json();
+    const data: unknown = await res.json();
+    const branches = Array.isArray(data)
+      ? data
+      : typeof data === "object" && data !== null && "branches" in data && Array.isArray(data.branches)
+        ? data.branches
+        : null;
+
+    if (!branches) {
+      throw new Error("Unexpected response while fetching branches");
+    }
+
+    return branches.map((branch: unknown) => {
+      if (typeof branch === "string") return branch;
+      if (
+        typeof branch === "object" &&
+        branch !== null &&
+        "name" in branch &&
+        typeof branch.name === "string"
+      ) {
+        return branch.name;
+      }
+      throw new Error("Received a branch without a valid name");
+    });
   },
 
   async startAudit(owner: string, repo: string, branch: string) {

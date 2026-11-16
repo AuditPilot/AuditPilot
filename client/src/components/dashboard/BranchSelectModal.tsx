@@ -50,17 +50,15 @@ export function BranchSelectModal({ isOpen, onClose, repo, onConfirm }: BranchSe
     api.getBranches(repo.ownerAccount, repo.name)
       .then((data) => {
         if (cancelled) return;
-        // Defensive: the endpoint returns string[], tolerate drift here.
-        const list = (Array.isArray(data) ? data : []).filter((b): b is string => typeof b === "string");
-        setBranches(list);
+        setBranches(data);
         // Auto-select the repo's default branch (falls back to main/master/first).
-        const preferred = list.includes(repo.defaultBranch || "")
+        const preferred = data.includes(repo.defaultBranch || "")
           ? repo.defaultBranch!
-          : list.includes("main")
+          : data.includes("main")
             ? "main"
-            : list.includes("master")
+            : data.includes("master")
               ? "master"
-              : (list[0] ?? "");
+              : (data[0] ?? "");
         setSelectedBranch(preferred);
       })
       .catch((err: unknown) => {
