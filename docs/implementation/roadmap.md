@@ -14,7 +14,7 @@
 | M4 | Persistent findings lifecycle, dedupe, audit comparison, health score | P1 | Planned | |
 | M5 | Bitbucket Cloud adapter + cross-provider dashboard | P1 | Done | Both repos |
 | M6 | Staged AI audit engine (static-first, tiers, fingerprints ground truth) | P1 | Done | |
-| M7 | Safe remediation v2 (anchor validation, stale-SHA, verification, regression flags) | P1 | Planned | |
+| M7 | Safe remediation v2 (anchor validation, stale-SHA, verification, regression flags) | P1 | Done | |
 | M8 | Team collaboration (invites, roles UX, assignments, activity) + reports surface | P1/P2 | Planned | |
 | M9 | Workspace-aware billing, usage metering, cost controls, plan enforcement | P0/P1 | Planned | |
 | M10 | Production hardening, observability, truthful marketing, launch readiness | P0/P1 | Planned | |
@@ -262,12 +262,31 @@ page "How this audit ran" stage-log + scan-summary panel, per-finding file ancho
 (rule/source/confidence), "Suggested fix" relabel. Tests: engine unit (classify/scanners/chunker/
 OSV), pipeline integration, gateway task→model matrix — API 241/241; SPA check/lint/build green.
 
-## M7 — Safe remediation v2 (P1)
+## M7 — Safe remediation v2 (P1) — Done
 
-- Fix workflow per spec §11 (anchor revalidation, stale headSha detection, protected-branch respect,
+- Fix workflow per spec A§11 (anchor revalidation, stale headSha detection, protected-branch respect,
   verification step, finding linkage, skipped/failed reporting). Per-issue errors no longer swallowed.
 **Acceptance:** hostile simulation tests (file changed between preview and commit → skip + report;
 protected branch → explicit denial path; verification never claims success without check evidence).
+**Shipped:** stale-head detection (audit commitSha vs live branch head — surfaced in fix-preview and
+in both apply flows, PR body warns on drift); protected-branch respect (`GET /branches/:ref/protection`
+— protected/unprotected/unknown, reported in every apply result and PR body; any GitHub 403 on
+refs/contents/pulls mutations becomes an explicit "Denied by branch protection or repository rules"
+400 instead of a raw 500); verification step (applied scanner rules are re-run against the PATCHED
+file text — verified / still-present / manual; the response only says "verified" with rule evidence,
+AI/OSV/heuristics findings are honestly manual; leftovers make `partial: true` and the PR body
+carries the warning list); A-25 partial contract (`partial` + `skipped[]` reasons on every result,
+nothing applied → hard 400 with reasons attached); finding linkage (fix payloads carry
+item identity — itemId/fingerprint/findingId; on PR creation the GitHub repo mirror resolves, a
+PullRequest row is upserted, matched Findings flip open/reopened → in_progress — human fixed/ignored/
+accepted_risk calls never downgraded — and land in relatedPullRequests; linkage is best-effort and
+never fails an already-created PR). SPA: FixConfirmationPage sends item identity + auditId and
+toasts partial results; AuditEditPage sends auditId and shows a stale-branch banner when the
+preview reports head drift. Tests: hostile simulation suite in fixes.test.ts (drift skip + report,
+one-file commit failure → partial, protection 200/403/404 matrix, explicit denial on refs/commit,
+stale headSha both directions, verification verified/still-present/manual) + fixLinking.test.ts
+integration (PR row upsert, lifecycle flip with no downgrade, item-identity resolution, legacy
+payload stays DB-free) — API 261/261; SPA check/lint/build green.
 
 ## M8 — Collaboration + reports + analytics surface (P1/P2)
 

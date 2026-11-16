@@ -156,7 +156,7 @@ export const api = {
    * Commits user-reviewed FULL file contents (from the inline diff editor) to
    * a fresh branch and opens a pull request server-side.
    */
-  async fixContents(owner: string, repo: string, files: Record<string, string>, targetBranch: string, title?: string, description?: string) {
+  async fixContents(owner: string, repo: string, files: Record<string, string>, targetBranch: string, title?: string, description?: string, auditId?: string) {
     const res = await fetch(`${API_BASE}/api/repos/${owner}/${repo}/fix-contents`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -165,6 +165,7 @@ export const api = {
         targetBranch,
         ...(title ? { title } : {}),
         ...(description ? { description } : {}),
+        ...(auditId ? { auditId } : {}),
       }),
       ...cred,
     });

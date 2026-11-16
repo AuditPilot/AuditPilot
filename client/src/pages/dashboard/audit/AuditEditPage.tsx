@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import { motion } from "framer-motion";
 import {
   AlertCircle,
+  AlertTriangle,
   ArrowLeft,
   Check,
   Link2,
@@ -1028,6 +1029,7 @@ export default function AuditEditPage() {
         targetBranch: branch,
         title: effectiveTitle,
         description: effectiveDescription,
+        auditId,
       },
       {
         onSuccess: (data: any) => {
@@ -1098,6 +1100,18 @@ export default function AuditEditPage() {
               </Button>
             </div>
           </div>
+
+          {/* M7: the branch moved since this audit ran — every anchor was
+              revalidated at preview time, but the user must see it. */}
+          {(preview as { headSha?: { stale?: boolean } } | null)?.headSha?.stale && (
+            <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+              <span>
+                The branch has moved since this audit ran — some snippets may have drifted. Anchors are re-validated
+                when you create the PR; anything that no longer matches is skipped and reported.
+              </span>
+            </div>
+          )}
 
           {/* Tabs */}
           <div className="flex items-center gap-6 mt-4 border-b border-white/10 text-sm">

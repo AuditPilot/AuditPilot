@@ -184,13 +184,15 @@ export function useApplyFix() {
     const { toast } = useToast();
 
     return useMutation({
-        mutationFn: async ({ owner, repo, issues, targetBranch, title, description }: {
+        mutationFn: async ({ owner, repo, issues, targetBranch, title, description, auditId }: {
             owner: string;
             repo: string;
             issues: any[];
             targetBranch: string;
             title?: string;
             description?: string;
+            /** M7: audit commitSha becomes the stale-head baseline server-side. */
+            auditId?: string;
         }) => {
             const res = await fetch(`${API_BASE}/api/repos/${owner}/${repo}/fix`, {
                 method: "POST",
@@ -200,6 +202,7 @@ export function useApplyFix() {
                     targetBranch,
                     ...(title ? { title } : {}),
                     ...(description ? { description } : {}),
+                    ...(auditId ? { auditId } : {}),
                 }),
                 credentials: "include"
             });
@@ -257,17 +260,28 @@ export function useApplyFixContents() {
     const { toast } = useToast();
 
     return useMutation({
-        mutationFn: async ({ owner, repo, files, targetBranch, title, description }: {
+        mutationFn: async ({ owner, repo, files, targetBranch, title, description, auditId }: {
             owner: string;
             repo: string;
             files: Record<string, string>;
             targetBranch: string;
             title?: string;
             description?: string;
+            /** M7: audit commitSha becomes the stale-head baseline server-side. */
+            auditId?: string;
         }) => {
-            return api.fixContents(owner, repo, files, targetBranch, title, description);
+            return api.fixContents(owner, repo, files, targetBranch, title, description, auditId);
         },
         onSuccess: (data: any) => {
+            if (data.partial) {
+                const skipped = Array.isArray(data.skipped) ? data.skipped.length : 0;
+                toast({
+                    title: "Pull Request Created (partial)",
+                    description: `PR #${data.prNumber ?? ""} opened, but ${skipped} file(s) could not be committed — see the PR description.`.trim(),
+                    variant: "destructive",
+                });
+                return;
+            }
             toast({
                 title: "Pull Request Created",
                 description: `#${data.prNumber ?? ""} opened with your reviewed edits.`.trim(),

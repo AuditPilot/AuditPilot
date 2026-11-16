@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAudit, useBranches, useApplyFix } from "@/hooks/use-audits";
+import { useToast } from "@/hooks/use-toast";
 import { useLocation, useParams } from "wouter";
 import DashboardLayout from "../DashboardLayout";
 
@@ -15,22 +16,38 @@ export default function FixConfirmationPage() {
   const { data: branches, isLoading: isLoadingBranches } = useBranches(owner, repo);
   const [targetBranch, setTargetBranch] = useState("main");
   const fixMutation = useApplyFix();
+  const { toast } = useToast();
 
   const handleCreatePR = () => {
     if (!audit) return;
     
-    // Convert AuditItems to the format expectations of useApplyFix
+    // Convert AuditItems to the fix format. Item identity (fingerprint/
+    // itemId) rides along so the server can link the created PR to the
+    // long-lived Finding lifecycle (M7) instead of losing the trail.
     const issues = audit.items.map((item: any) => ({
       description: item.label,
       file_path: item.value,
       old_code: item.old_code,
       new_code: item.new_code,
+      ...(item.type ? { type: item.type } : {}),
+      ...(item.auditorNotes ? { auditorNotes: item.auditorNotes } : {}),
+      ...(item.fingerprint ? { fingerprint: item.fingerprint } : {}),
+      ...(item.findingId ? { findingId: item.findingId } : {}),
+      itemId: String(item._id),
     })).filter((i: any) => i.new_code);
 
-    fixMutation.mutate({ owner, repo, issues, targetBranch }, {
+    fixMutation.mutate({ owner, repo, issues, targetBranch, auditId }, {
       onSuccess: (data: any) => {
         const prNumber = data.prNumber ?? data.number ?? data.html_url?.split('/').pop();
         const url = data.prUrl ?? data.html_url;
+        if (data.partial) {
+          const skipped = Array.isArray(data.skipped) ? data.skipped.length : 0;
+          toast({
+            title: "Pull Request Created (partial)",
+            description: `PR #${prNumber} opened, but ${skipped} fix(es) were skipped or did not clear their checks — see the PR description.`,
+            variant: "destructive",
+          });
+        }
         setLocation(`/app/audit/${owner}/${repo}/success/${prNumber}?url=${encodeURIComponent(url)}`);
       }
     });
