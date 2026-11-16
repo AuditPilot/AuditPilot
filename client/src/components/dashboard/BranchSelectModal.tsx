@@ -12,20 +12,11 @@ import { api } from "@/lib/api-service";
 import { Loader2, GitBranch, Check, AlertTriangle, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-/**
- * The repos API returns raw GitHub JSON — newer clients may see
- * owner as a plain string (e.g. "shaeel45") instead of { login }.
- */
-export function ownerLoginOf(repo: BranchRepoInfo): string {
-  if (!repo) return "";
-  if (typeof repo.owner === "string") return repo.owner;
-  return repo.owner?.login ?? "";
-}
-
 export interface BranchRepoInfo {
-  owner: { login: string } | string;
   name: string;
-  default_branch?: string;
+  /** Provider account/org that owns the repo (normalized ScmRepository.ownerAccount). */
+  ownerAccount: string;
+  defaultBranch?: string | null;
 }
 
 interface BranchSelectModalProps {
@@ -44,8 +35,7 @@ export function BranchSelectModal({ isOpen, onClose, repo, onConfirm }: BranchSe
 
   useEffect(() => {
     if (!isOpen || !repo) return;
-    const owner = ownerLoginOf(repo);
-    if (!repo.name || !owner) {
+    if (!repo.name || !repo.ownerAccount) {
       setErrorMsg("Repository information is incomplete — close and reopen this dialog.");
       return;
     }
@@ -57,15 +47,15 @@ export function BranchSelectModal({ isOpen, onClose, repo, onConfirm }: BranchSe
     setBranches([]);
     setSelectedBranch("");
 
-    api.getBranches(owner, repo.name)
+    api.getBranches(repo.ownerAccount, repo.name)
       .then((data) => {
         if (cancelled) return;
         // Defensive: the endpoint returns string[], tolerate drift here.
         const list = (Array.isArray(data) ? data : []).filter((b): b is string => typeof b === "string");
         setBranches(list);
         // Auto-select the repo's default branch (falls back to main/master/first).
-        const preferred = list.includes(repo.default_branch || "")
-          ? repo.default_branch!
+        const preferred = list.includes(repo.defaultBranch || "")
+          ? repo.defaultBranch!
           : list.includes("main")
             ? "main"
             : list.includes("master")
@@ -75,7 +65,7 @@ export function BranchSelectModal({ isOpen, onClose, repo, onConfirm }: BranchSe
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        setErrorMsg(err instanceof Error ? err.message : "Failed to fetch branches from GitHub");
+        setErrorMsg(err instanceof Error ? err.message : "Failed to fetch branches from your repository provider");
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false);
@@ -123,7 +113,7 @@ export function BranchSelectModal({ isOpen, onClose, repo, onConfirm }: BranchSe
             </div>
           ) : branches.length === 0 ? (
             <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-300">
-              No branches were returned for this repository — it may be empty or your GitHub token may not
+              No branches were returned for this repository — it may be empty or your connection may not
               have access. Try reconnecting in Settings.
             </div>
           ) : (

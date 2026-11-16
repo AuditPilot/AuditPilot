@@ -510,20 +510,17 @@ export const api = {
 
 // --- Normalized API shapes (mirror-backed, provider-agnostic) ---
 
-/** Normalized repository returned by GET /api/repos (provider-agnostic). */
+/** Normalized repository returned by GET /api/repos (mirrors the API's ScmRepository contract). */
 export interface NormalizedRepository {
   provider: string;
   providerExternalId: string;
-  ownerLogin: string;
+  ownerAccount: string;
   name: string;
   fullName: string;
   description?: string | null;
-  language?: string | null;
-  defaultBranch?: string | null;
-  visibility?: string | null;
+  visibility?: "public" | "private" | "internal" | null;
   archived?: boolean;
-  stargazersCount?: number | null;
-  updatedAt?: string | null;
+  defaultBranch?: string | null;
   htmlUrl?: string | null;
 }
 

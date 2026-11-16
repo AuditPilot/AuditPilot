@@ -26,7 +26,7 @@ export default function ReposPage() {
 
   const handleConfirmBranch = (branch: string) => {
     if (selectedRepo) {
-      setLocation(`/app/audit/${selectedRepo.ownerLogin}/${selectedRepo.name}/${branch}`);
+      setLocation(`/app/audit/${selectedRepo.ownerAccount}/${selectedRepo.name}/${branch}`);
     }
     setIsModalOpen(false);
   };
@@ -72,20 +72,23 @@ export default function ReposPage() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-slate-100 truncate max-w-[240px]">{repo.fullName}</h3>
-                      <div className="text-xs text-slate-500 flex items-center gap-2 mt-1">
-                        <span>{repo.language || "Unknown"}</span>
-                        {repo.updatedAt && (
-                          <>
-                            <span className="w-1 h-1 bg-slate-600 rounded-full"></span>
-                            <span>Updated {new Date(repo.updatedAt).toLocaleDateString()}</span>
-                          </>
-                        )}
-                      </div>
+                      {repo.description && (
+                        <p className="text-xs text-slate-500 truncate max-w-[240px] mt-1">{repo.description}</p>
+                      )}
                     </div>
                   </div>
-                  <Badge variant="secondary" className="bg-white/5 text-slate-300 group-hover:bg-indigo-500/10 group-hover:text-indigo-300">
-                    {repo.stargazersCount ?? 0} ★
-                  </Badge>
+                  <div className="flex flex-col items-end gap-1.5">
+                    {repo.visibility && (
+                      <Badge variant="secondary" className="bg-white/5 text-slate-300 group-hover:bg-indigo-500/10 group-hover:text-indigo-300 capitalize">
+                        {repo.visibility}
+                      </Badge>
+                    )}
+                    {repo.archived && (
+                      <Badge variant="secondary" className="bg-amber-500/10 text-amber-300 border-amber-500/20">
+                        Archived
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 <div className="mt-4 flex items-center justify-between">
                   <div className="text-xs text-slate-400">{repo.defaultBranch || "main"} branch</div>
@@ -106,7 +109,7 @@ export default function ReposPage() {
       <BranchSelectModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        repo={selectedRepo ? { name: selectedRepo.name, owner: { login: selectedRepo.ownerLogin }, default_branch: selectedRepo.defaultBranch ?? undefined } : null}
+        repo={selectedRepo ? { name: selectedRepo.name, ownerAccount: selectedRepo.ownerAccount, defaultBranch: selectedRepo.defaultBranch } : null}
         onConfirm={handleConfirmBranch}
       />
     </DashboardLayout>
