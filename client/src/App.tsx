@@ -9,6 +9,7 @@ import Landing from "@/pages/Landing";
 import Auth from "@/pages/Auth";
 import Pricing from "@/pages/Pricing";
 import HowItWorks from "@/pages/HowItWorks";
+import InviteAccept from "@/pages/InviteAccept";
 
 // Dashboard Pages
 import ReposPage from "@/pages/dashboard/ReposPage";
@@ -43,6 +44,9 @@ function Router() {
       <Route path="/auth" component={Auth} />
       <Route path="/pricing" component={Pricing} />
       <Route path="/how-it-works" component={HowItWorks} />
+
+      {/* Public invitation redemption (M8) — no ProtectedRoute */}
+      <Route path="/app/invites/:token" component={InviteAccept} />
 
       {/* Dashboard Routes */}
       <ProtectedRoute path="/app" component={ReposPage} />

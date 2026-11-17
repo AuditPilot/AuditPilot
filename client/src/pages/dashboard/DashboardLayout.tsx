@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuthStatus } from "@/hooks/use-repos";
+import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead } from "@/hooks/use-notifications";
 import { Button } from "@/components/ui/button";
 import { Code2, Shield, GitPullRequest, Zap, Eye, Loader2, Building2 } from "lucide-react";
 import { NavItem } from "@/components/dashboard/NavItem";
 import { UsageCounter } from "@/components/dashboard/UsageCounter";
 import { LimitReachedModal } from "@/components/dashboard/LimitReachedModal";
 import { API_BASE } from "@/lib/api-service";
+import { NotificationsBell } from "@/components/dashboard/NotificationsBell";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
@@ -128,6 +130,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </h1>
           </div>
           <div className="flex items-center gap-4">
+            <NotificationsBell />
             <Button variant="outline" size="sm" className="hidden sm:flex border-white/10 text-slate-300 hover:bg-white/5 hover:text-white">
               Documentation
             </Button>

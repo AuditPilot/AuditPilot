@@ -528,6 +528,138 @@ export const api = {
       throw new Error(body.message || "Failed to compare the two audits");
     }
     return res.json() as Promise<RepoAuditCompareResponse>;
+  },
+
+  // --- Team collaboration (M8) ---
+
+  async getWorkspaceMembers(workspaceId: string) {
+    const res = await fetch(`${API_BASE}/api/workspaces/${workspaceId}/members`, { ...cred });
+    if (!res.ok) throw new Error("Failed to fetch workspace members");
+    return res.json() as Promise<{ members: WorkspaceMemberRow[] }>;
+  },
+
+  async changeWorkspaceMemberRole(workspaceId: string, userId: string, role: string) {
+    const res = await fetch(`${API_BASE}/api/workspaces/${workspaceId}/members/${userId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role }),
+      ...cred,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({} as { message?: string }));
+      throw new Error(body.message || "Failed to change the member's role");
+    }
+    return res.json() as Promise<{ member: WorkspaceMemberRow }>;
+  },
+
+  async removeWorkspaceMember(workspaceId: string, userId: string) {
+    const res = await fetch(`${API_BASE}/api/workspaces/${workspaceId}/members/${userId}`, {
+      method: "DELETE",
+      ...cred,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({} as { message?: string }));
+      throw new Error(body.message || "Failed to remove the member");
+    }
+  },
+
+  async getWorkspaceInvites(workspaceId: string) {
+    const res = await fetch(`${API_BASE}/api/workspaces/${workspaceId}/invites`, { ...cred });
+    if (!res.ok) throw new Error("Failed to fetch workspace invites");
+    return res.json() as Promise<{ invites: WorkspaceInviteRow[] }>;
+  },
+
+  async createWorkspaceInvite(workspaceId: string, email: string, role: string) {
+    const res = await fetch(`${API_BASE}/api/workspaces/${workspaceId}/invites`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, role }),
+      ...cred,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({} as { message?: string }));
+      throw new Error(body.message || "Failed to create the invite");
+    }
+    return res.json() as Promise<{ invite: WorkspaceInviteRow; inviteUrl: string }>;
+  },
+
+  async revokeWorkspaceInvite(workspaceId: string, inviteId: string) {
+    const res = await fetch(`${API_BASE}/api/workspaces/${workspaceId}/invites/${inviteId}`, {
+      method: "DELETE",
+      ...cred,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({} as { message?: string }));
+      throw new Error(body.message || "Failed to revoke the invite");
+    }
+  },
+
+  async getWorkspaceActivity(workspaceId: string, page = 1) {
+    const res = await fetch(`${API_BASE}/api/workspaces/${workspaceId}/activity?page=${page}`, { ...cred });
+    if (!res.ok) throw new Error("Failed to fetch workspace activity");
+    return res.json() as Promise<ActivityPage>;
+  },
+
+  async getInvitePreview(token: string) {
+    const res = await fetch(`${API_BASE}/api/invites/${token}`);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({} as { message?: string }));
+      throw new Error(body.message || "Invitation not found");
+    }
+    return res.json() as Promise<{ invite: InvitePreview }>;
+  },
+
+  async acceptInvite(token: string) {
+    const res = await fetch(`${API_BASE}/api/invites/${token}/accept`, { method: "POST", ...cred });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({} as { message?: string }));
+      throw new Error(body.message || "Failed to accept the invitation");
+    }
+    return res.json() as Promise<{ workspace: { id: string; name: string | null }; role: string }>;
+  },
+
+  async assignRepoFinding(workspaceId: string, repoId: string, findingId: string, assignedTo: string | null) {
+    const res = await fetch(
+      `${API_BASE}/api/workspaces/${workspaceId}/repositories/${repoId}/findings/${findingId}/assignment`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assignedTo }),
+        ...cred,
+      },
+    );
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({} as { message?: string }));
+      throw new Error(body.message || "Failed to update the assignment");
+    }
+    return res.json() as Promise<AssignFindingResult>;
+  },
+
+  // --- Personal notifications inbox (M8) ---
+
+  async getNotifications(page = 1) {
+    const res = await fetch(`${API_BASE}/api/notifications?page=${page}`, { ...cred });
+    if (!res.ok) throw new Error("Failed to fetch notifications");
+    return res.json() as Promise<NotificationsPage>;
+  },
+
+  async markNotificationRead(id: string) {
+    const res = await fetch(`${API_BASE}/api/notifications/${id}/read`, { method: "POST", ...cred });
+    if (!res.ok) throw new Error("Failed to mark the notification as read");
+  },
+
+  async markAllNotificationsRead() {
+    const res = await fetch(`${API_BASE}/api/notifications/read-all`, { method: "POST", ...cred });
+    if (!res.ok) throw new Error("Failed to mark all notifications as read");
+    return res.json() as Promise<{ markedRead: number }>;
+  },
+
+  // --- Audit reports surface (M8) ---
+
+  async getAuditReports(auditId: string) {
+    const res = await fetch(`${API_BASE}/api/audits/${auditId}/reports`, { ...cred });
+    if (!res.ok) throw new Error("Failed to fetch audit reports");
+    return res.json() as Promise<AuditReportsResponse>;
   }
 };
 
@@ -644,6 +776,8 @@ export interface RepoFinding {
   lastDetectedAt: string;
   resolvedAt: string | null;
   auditId: string | null;
+  assignedTo?: string | null;
+  assignee?: { id: string; username: string | null; avatarUrl: string | null } | null;
 }
 
 export interface RepoFindingsResponse {
@@ -693,4 +827,90 @@ export interface RepoAuditCompareResponse {
   newInTarget: RepoAuditCompareItem[];
   resolvedInTarget: RepoAuditCompareItem[];
   counts: { stillPresent: number; newInTarget: number; resolvedInTarget: number };
+}
+
+// --- Team collaboration shapes (M8) ---
+
+export type WorkspaceRoleValue = "owner" | "admin" | "developer" | "viewer";
+
+export interface WorkspaceMemberRow {
+  id: string;
+  userId: string;
+  role: WorkspaceRoleValue;
+  status: string;
+  joinedAt: string | null;
+  username: string | null;
+  avatarUrl: string | null;
+}
+
+export interface WorkspaceInviteRow {
+  id: string;
+  email: string;
+  role: "admin" | "developer" | "viewer";
+  status: "pending" | "accepted" | "revoked" | "expired";
+  invitedAt: string;
+  expiresAt: string;
+  acceptedAt: string | null;
+}
+
+export interface InvitePreview {
+  token: string;
+  workspaceId: string;
+  email: string;
+  role: "admin" | "developer" | "viewer";
+  status: string;
+  expiresAt: string;
+}
+
+export interface ActivityEntry {
+  id: string;
+  action: string;
+  actor: { id: string; username: string; avatarUrl: string | null } | null;
+  targetType: string | null;
+  targetId: string | null;
+  meta: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface ActivityPage {
+  activity: ActivityEntry[];
+  page: number;
+  hasNext: boolean;
+}
+
+export interface AssignFindingResult {
+  id: string;
+  assignedTo: string | null;
+  assignee: { id: string; username: string } | null;
+}
+
+export interface NotificationRow {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  workspaceId: string | null;
+  read: boolean;
+  createdAt: string;
+  meta: Record<string, unknown>;
+}
+
+export interface NotificationsPage {
+  notifications: NotificationRow[];
+  unreadCount: number;
+  page: number;
+  hasNext: boolean;
+}
+
+export interface AuditReportRow {
+  id: string;
+  auditId: string;
+  summary: string | null;
+  riskScore: number | null;
+  generatedContent: string | null;
+  createdAt: string;
+}
+
+export interface AuditReportsResponse {
+  reports: AuditReportRow[];
 }

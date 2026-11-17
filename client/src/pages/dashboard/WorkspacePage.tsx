@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import DashboardLayout from "./DashboardLayout";
+import { WorkspaceTeamTab } from "./workspace/TeamTab";
 import {
   useWorkspace, useWorkspaceConnections, useConnectWorkspaceGithub,
   useWorkspaceRepositories, useSyncWorkspaceRepository, useRegisterWorkspaceRepository,
@@ -48,6 +49,7 @@ export default function WorkspacePage() {
   const [candidatesLoading, setCandidatesLoading] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [registerTab, setRegisterTab] = useState<ProviderTab>("github");
+  const [activeTab, setActiveTab] = useState<"repositories" | "team">("repositories");
 
   const sync = useSyncWorkspaceRepository(wsId);
   const register = useRegisterWorkspaceRepository(wsId);
@@ -217,77 +219,90 @@ export default function WorkspacePage() {
               Repository registry — metadata and pull requests are synced on demand.
             </p>
           </div>
-          {canManage && repositories && repositories.length > 0 && (
+          {activeTab === "repositories" && canManage && repositories && repositories.length > 0 && (
             <Button onClick={openRegister} className="bg-indigo-500 hover:bg-indigo-400 text-white">
               <Plus className="w-4 h-4 mr-2" /> Register repository
             </Button>
           )}
         </div>
 
-        {canManage && !githubConnection && (
-          <Card className="p-5 mb-6 border-amber-500/20 bg-amber-500/5">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-amber-400 mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-sm font-medium text-amber-200">GitHub is not connected to this workspace</p>
-                  <p className="text-xs text-amber-200/70 mt-1">
-                    {isAdmin
-                      ? "Syncing and PR mirroring need a workspace-level connection. Connect using your existing GitHub identity."
-                      : "Ask a workspace admin to connect GitHub — syncing and PR mirroring need a workspace-level connection."}
-                  </p>
-                </div>
-              </div>
-              {isAdmin && (
-                <div className="flex items-center gap-2 shrink-0">
-                  <Button size="sm" variant="outline"
-                    onClick={() => installApp.mutate()}
-                    disabled={installApp.isPending}
-                    className="border-amber-500/40 text-amber-200 hover:bg-amber-500/10">
-                    {installApp.isPending
-                      ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      : <Link2 className="w-4 h-4 mr-2" />}
-                    Install GitHub App
-                  </Button>
-                  <Button size="sm" onClick={() => connect.mutate()} disabled={connect.isPending}
-                    className="bg-amber-500 hover:bg-amber-400 text-slate-950">
-                    {connect.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Link2 className="w-4 h-4 mr-2" />}
-                    Connect GitHub
-                  </Button>
-                </div>
-              )}
-            </div>
-          </Card>
-        )}
+        <Tabs value={activeTab} onValueChange={v => setActiveTab(v as "repositories" | "team")} className="mb-6">
+          <TabsList>
+            <TabsTrigger value="repositories">Repositories</TabsTrigger>
+            <TabsTrigger value="team">Team</TabsTrigger>
+          </TabsList>
+        </Tabs>
 
-        {canManage && !bitbucketConnection && (
-          <Card className="p-5 mb-6 border-sky-500/20 bg-sky-500/5">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-sky-400 mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-sm font-medium text-sky-200">Bitbucket Cloud is not connected to this workspace</p>
-                  <p className="text-xs text-sky-200/70 mt-1">
-                    {isAdmin
-                      ? "Connect your Atlassian account to register Bitbucket repositories — sync and PR mirroring use the workspace-level connection."
-                      : "Ask a workspace admin to connect Bitbucket Cloud — syncing and PR mirroring need a workspace-level connection."}
-                  </p>
+        {activeTab === "repositories" ? (
+          <>
+            {canManage && !githubConnection && (
+              <Card className="p-5 mb-6 border-amber-500/20 bg-amber-500/5">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-amber-400 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-amber-200">GitHub is not connected to this workspace</p>
+                      <p className="text-xs text-amber-200/70 mt-1">
+                        {isAdmin
+                          ? "Syncing and PR mirroring need a workspace-level connection. Connect using your existing GitHub identity."
+                          : "Ask a workspace admin to connect GitHub — syncing and PR mirroring need a workspace-level connection."}
+                      </p>
+                    </div>
+                  </div>
+                  {isAdmin && (
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button size="sm" variant="outline"
+                        onClick={() => installApp.mutate()}
+                        disabled={installApp.isPending}
+                        className="border-amber-500/40 text-amber-200 hover:bg-amber-500/10">
+                        {installApp.isPending
+                          ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          : <Link2 className="w-4 h-4 mr-2" />}
+                        Install GitHub App
+                      </Button>
+                      <Button size="sm" onClick={() => connect.mutate()} disabled={connect.isPending}
+                        className="bg-amber-500 hover:bg-amber-400 text-slate-950">
+                        {connect.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Link2 className="w-4 h-4 mr-2" />}
+                        Connect GitHub
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              </div>
-              {isAdmin && (
-                <Button size="sm" onClick={() => connectBitbucket.mutate()} disabled={connectBitbucket.isPending}
-                  className="bg-sky-500 hover:bg-sky-400 text-slate-950 shrink-0">
-                  {connectBitbucket.isPending
-                    ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    : <Link2 className="w-4 h-4 mr-2" />}
-                  Connect Bitbucket
-                </Button>
-              )}
-            </div>
-          </Card>
-        )}
+              </Card>
+            )}
 
-        {table}
+            {canManage && !bitbucketConnection && (
+              <Card className="p-5 mb-6 border-sky-500/20 bg-sky-500/5">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-sky-400 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-sky-200">Bitbucket Cloud is not connected to this workspace</p>
+                      <p className="text-xs text-sky-200/70 mt-1">
+                        {isAdmin
+                          ? "Connect your Atlassian account to register Bitbucket repositories — sync and PR mirroring use the workspace-level connection."
+                          : "Ask a workspace admin to connect Bitbucket Cloud — syncing and PR mirroring need a workspace-level connection."}
+                      </p>
+                    </div>
+                  </div>
+                  {isAdmin && (
+                    <Button size="sm" onClick={() => connectBitbucket.mutate()} disabled={connectBitbucket.isPending}
+                      className="bg-sky-500 hover:bg-sky-400 text-slate-950 shrink-0">
+                      {connectBitbucket.isPending
+                        ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        : <Link2 className="w-4 h-4 mr-2" />}
+                      Connect Bitbucket
+                    </Button>
+                  )}
+                </div>
+              </Card>
+            )}
+
+            {table}
+          </>
+        ) : (
+          <WorkspaceTeamTab wsId={wsId} />
+        )}
 
         {/* Register dialog */}
         <Dialog open={registerOpen} onOpenChange={setRegisterOpen}>

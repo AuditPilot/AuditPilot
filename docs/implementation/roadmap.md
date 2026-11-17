@@ -15,7 +15,7 @@
 | M5 | Bitbucket Cloud adapter + cross-provider dashboard | P1 | Done | Both repos |
 | M6 | Staged AI audit engine (static-first, tiers, fingerprints ground truth) | P1 | Done | |
 | M7 | Safe remediation v2 (anchor validation, stale-SHA, verification, regression flags) | P1 | Done | |
-| M8 | Team collaboration (invites, roles UX, assignments, activity) + reports surface | P1/P2 | Planned | |
+| M8 | Team collaboration (invites, roles UX, assignments, activity) + reports surface | P1/P2 | Done | |
 | M9 | Workspace-aware billing, usage metering, cost controls, plan enforcement | P0/P1 | Planned | |
 | M10 | Production hardening, observability, truthful marketing, launch readiness | P0/P1 | Planned | |
 
@@ -288,12 +288,36 @@ stale headSha both directions, verification verified/still-present/manual) + fix
 integration (PR row upsert, lifecycle flip with no downgrade, item-identity resolution, legacy
 payload stays DB-free) — API 261/261; SPA check/lint/build green.
 
-## M8 — Collaboration + reports + analytics surface (P1/P2)
+## M8 — Collaboration + reports + analytics surface (P1/P2) - Done
 
 - Invitations, role changes, assignment of findings, activity feed, notifications; reports UI around
   the existing Report rows; copilot groundwork (workspace-scoped, cited).
 **Acceptance:** role matrix tests; an agency workspace cannot see another workspace's client data
 (HR checks at service AND route layers).
+**Shipped:** team collaboration module (`/workspaces/:id/members` list with user enrichment +
+`PATCH /members/:userId/role` (last-owner protection, active-member validation, role matrix owner/
+admin/developer/viewer) + `DELETE /members/:userId`; invites CRUD with one-time `inviteUrl`
+returned to the creator (`/app/invites/:token`), token redemption with per-account email matching
+(401 → sign in first, 400 → add the email to the GitHub account, 403 → wrong account, 410 →
+expired/revoked/accepted); findings assignment (owner/admin/developer assign to active members,
+self/unassign allowed, actor snapshots for the assignee chip); workspace activity feed
+(`GET /activity?page=`, 25/page, actor snapshots, actions: invite_create/invite_revoke/
+role_change/member_add/member_remove/finding_assign); personal notifications inbox
+(`GET /notifications` with unreadCount, mark one + mark all; seeded on invite/role-change/
+assignment; 30s SPA polling); workspace-scoped copilot (`GET/POST /copilot` — question-answer with
+citations and evidence counts from findings/audits, viewer+ allowed); reports surface
+(`GET /audits/:id/reports`, `POST /audits/:id/generate-insights` → 202 job that aggregates
+findings/severity counts into the Report row, surfaced in the SPA AI-insights card). SPA: workspace
+page tabs (Repositories | Team) with TeamTab (member role selects + removal for admin+, invite
+dialog with one-time link copy, pending-invite revoke, paginated activity feed); RepoFindingsPage
+assignee dropdown (developer+) and read-only assignee chips; DashboardLayout notification bell
+(unread badge, mark read / mark all, deep-link to the notification's workspace); public
+InviteAccept page; AuditResultsPage insights card (risk score, summary, generated content,
+regenerate). Tests: collaboration.test.ts (16 tests) covering the role matrix, invite
+create/conflict/expiry, assignment authorization (viewer 403 / developer OK), activity actor
+snapshots, cross-workspace notification isolation + unread math, agency-workspace data isolation
+(HR at route AND service layers), copilot citation contract; full API suite 279/279 across 26
+files; SPA check/lint/build green. API commits `0a5f8c6` + `9599607`.
 
 ## M9 — Workspace billing (P0 within M9 window)
 

@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
-import { ArrowLeft, AlertCircle, ArrowRight, Shield, Zap, CheckCircle2, Loader2, Code2, GitBranch, FileCode2, Clock, FileSearch, Bot } from "lucide-react";
+import { ArrowLeft, AlertCircle, ArrowRight, Shield, Zap, CheckCircle2, Loader2, Code2, GitBranch, FileCode2, Clock, FileSearch, Bot, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAudit } from "@/hooks/use-audits";
+import { useAudit, useGenerateInsights, useAuditReports } from "@/hooks/use-audits";
 import { useLocation, useParams } from "wouter";
 import DashboardLayout from "../DashboardLayout";
 
@@ -69,6 +69,10 @@ export default function AuditResultsPage() {
   const { owner, repo, auditId } = useParams<{ owner: string, repo: string, auditId: string }>();
   const [, setLocation] = useLocation();
   const { data: audit, isLoading } = useAudit(auditId);
+  const { data: reportsData } = useAuditReports(auditId);
+  const generateInsights = useGenerateInsights(auditId);
+  const reports = reportsData?.reports ?? [];
+  const latestReport = reports[0];
 
   if (isLoading) {
     return (
@@ -152,6 +156,58 @@ export default function AuditResultsPage() {
                 )}
               </div>
             </div>
+          </section>
+
+          {/* ── AI insights (M8 reports surface) ──────────────────────── */}
+          <section className="rounded-3xl border border-white/10 bg-slate-900/50 backdrop-blur-xl p-6 md:p-8 shadow-xl shadow-black/20">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <div className="flex items-center gap-2.5">
+                <Sparkles className="w-4.5 h-4.5 text-violet-400" />
+                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-300">AI insights</h3>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => generateInsights.mutate()}
+                disabled={generateInsights.isPending}
+                className="bg-violet-500 hover:bg-violet-400 text-white"
+              >
+                {generateInsights.isPending ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1.5" />}
+                {generateInsights.isPending ? "Generating…" : latestReport ? "Regenerate insights" : "Generate insights"}
+              </Button>
+            </div>
+            {latestReport ? (
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-center gap-4">
+                  {typeof latestReport.riskScore === "number" && (
+                    <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5">
+                      <div className="text-2xl font-bold text-slate-100 tabular-nums">{latestReport.riskScore}</div>
+                      <div className="text-[10px] uppercase tracking-wider text-slate-500">Risk score (0–100)</div>
+                    </div>
+                  )}
+                  {latestReport.createdAt && (
+                    <span className="text-xs text-slate-500">
+                      Generated {new Date(latestReport.createdAt).toLocaleString()}
+                    </span>
+                  )}
+                </div>
+                {latestReport.summary && (
+                  <p className="text-sm text-slate-300 leading-relaxed">{latestReport.summary}</p>
+                )}
+                {latestReport.generatedContent && (
+                  <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 text-xs text-slate-400 whitespace-pre-wrap font-mono max-h-72 overflow-y-auto">
+                    {typeof latestReport.generatedContent === "string"
+                      ? latestReport.generatedContent
+                      : JSON.stringify(latestReport.generatedContent, null, 2)}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500">
+                {generateInsights.isPending
+                  ? "Queued — insights appear here once the AI finishes (polls in the background)."
+                  : "No insights generated yet. Run the AI to get a risk score, executive summary, and detailed recommendations."}
+              </p>
+            )}
           </section>
 
           {/* ── How this audit ran (M6 staged engine transparency) ────── */}

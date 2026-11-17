@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Bug, Loader2, Flame } from "lucide-react";
+import { Bug, Loader2, Flame, UserRound } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { useRepoFindings } from "@/hooks/use-workspaces";
+import { useRepoFindings, useWorkspace, useWorkspaceMembers, useAssignFinding } from "@/hooks/use-workspaces";
 import { SeverityBadge, FindingStatusBadge, timeAgo } from "./shared";
 import { cn } from "@/lib/utils";
+import { type RepoFinding } from "@/lib/api-service";
 
 const STATUS_FILTERS = [
   "all", "open", "in_progress", "reopened", "fixed", "verified", "accepted_risk", "ignored",
@@ -15,11 +16,18 @@ const SEVERITY_FILTERS = ["all", "critical", "high", "medium", "low"] as const;
  * Repository findings (M4): the long-lived, lifecycle-managed issue list.
  * Same problem detected by consecutive audits is ONE row — `last seen`
  * moves, regressions are flagged, and the counts strip mirrors the server.
+ * M8 adds per-finding assignment to active workspace members (developer+).
  */
 export function RepoFindingsPage({ wsId, repoId }: { wsId: string; repoId: string }) {
   const [status, setStatus] = useState<string>("all");
   const [severity, setSeverity] = useState<string>("all");
   const { data, isLoading, isError } = useRepoFindings(wsId, repoId, status, severity);
+  const { data: workspace } = useWorkspace(wsId);
+  const { data: members } = useWorkspaceMembers(wsId);
+  const assign = useAssignFinding(wsId, repoId);
+
+  const canAssign = workspace?.role === "owner" || workspace?.role === "admin" || workspace?.role === "developer";
+  const assignees = (members ?? []).filter(m => m.status === "active");
 
   if (isLoading) {
     return (
@@ -91,39 +99,81 @@ export function RepoFindingsPage({ wsId, repoId }: { wsId: string; repoId: strin
       ) : (
         <div className="space-y-3">
           {findings.map(f => (
-            <Card key={f._id} className="p-4 bg-slate-900/60 border border-white/10">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                    <SeverityBadge severity={f.severity} />
-                    <FindingStatusBadge status={f.status} />
-                    {f.regression && (
-                      <span className="inline-flex items-center gap-1 text-[11px] text-orange-300 bg-orange-500/10 px-2 py-0.5 rounded-full">
-                        <Flame className="w-3 h-3" />
-                        regressed{f.regressionCount > 1 ? ` ×${f.regressionCount}` : ""}
-                      </span>
-                    )}
-                    <span className="text-[11px] uppercase tracking-wider text-slate-500">{f.category}</span>
-                  </div>
-                  <p className="text-sm text-slate-200">{f.description}</p>
-                  <p className="mt-1 font-mono text-xs text-slate-500 truncate">
-                    {f.filePath}{f.lineStart ? `:${f.lineStart}` : ""}
-                  </p>
-                  {f.recommendation && (
-                    <p className="mt-2 text-xs text-slate-400 line-clamp-2">
-                      <span className="text-slate-500">Fix: </span>{f.recommendation}
-                    </p>
-                  )}
-                </div>
-                <div className="text-right text-[11px] text-slate-500 shrink-0">
-                  <p>first seen {timeAgo(f.firstDetectedAt)}</p>
-                  <p>last seen {timeAgo(f.lastDetectedAt)}</p>
-                </div>
-              </div>
-            </Card>
+            <FindingRow
+              key={f._id}
+              finding={f}
+              assignees={canAssign ? assignees : []}
+              disabled={assign.isPending}
+              onAssign={(assignedTo) => assign.mutate({ findingId: f._id, assignedTo })}
+            />
           ))}
         </div>
       )}
     </div>
+  );
+}
+
+function FindingRow({
+  finding, assignees, disabled, onAssign,
+}: {
+  finding: RepoFinding;
+  assignees: Array<{ userId: string; username: string | null; avatarUrl: string | null }>;
+  disabled: boolean;
+  onAssign: (assignedTo: string | null) => void;
+}) {
+  return (
+    <Card className="p-4 bg-slate-900/60 border border-white/10">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2 mb-1.5">
+            <SeverityBadge severity={finding.severity} />
+            <FindingStatusBadge status={finding.status} />
+            {finding.regression && (
+              <span className="inline-flex items-center gap-1 text-[11px] text-orange-300 bg-orange-500/10 px-2 py-0.5 rounded-full">
+                <Flame className="w-3 h-3" />
+                regressed{finding.regressionCount > 1 ? ` ×${finding.regressionCount}` : ""}
+              </span>
+            )}
+            <span className="text-[11px] uppercase tracking-wider text-slate-500">{finding.category}</span>
+          </div>
+          <p className="text-sm text-slate-200">{finding.description}</p>
+          <p className="mt-1 font-mono text-xs text-slate-500 truncate">
+            {finding.filePath}{finding.lineStart ? `:${finding.lineStart}` : ""}
+          </p>
+          {finding.recommendation && (
+            <p className="mt-2 text-xs text-slate-400 line-clamp-2">
+              <span className="text-slate-500">Fix: </span>{finding.recommendation}
+            </p>
+          )}
+        </div>
+        <div className="flex flex-col items-end gap-2 shrink-0">
+          <div className="text-right text-[11px] text-slate-500">
+            <p>first seen {timeAgo(finding.firstDetectedAt)}</p>
+            <p>last seen {timeAgo(finding.lastDetectedAt)}</p>
+          </div>
+          {assignees.length > 0 ? (
+            <select
+              value={finding.assignedTo ?? ""}
+              disabled={disabled}
+              onChange={e => onAssign(e.target.value === "" ? null : e.target.value)}
+              className={cn(
+                "bg-slate-950 border border-white/10 rounded-md text-[11px] text-slate-300 px-2 py-1 focus:outline-none focus:border-indigo-400/50 max-w-44",
+                !finding.assignedTo && "text-slate-500",
+              )}
+            >
+              <option value="">Unassigned</option>
+              {assignees.map(m => (
+                <option key={m.userId} value={m.userId}>{m.username ?? m.userId}</option>
+              ))}
+            </select>
+          ) : finding.assignee ? (
+            <span className="inline-flex items-center gap-1.5 text-[11px] text-slate-400">
+              <UserRound className="w-3 h-3" />
+              {finding.assignee.username ?? "assigned"}
+            </span>
+          ) : null}
+        </div>
+      </div>
+    </Card>
   );
 }

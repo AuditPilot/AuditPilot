@@ -7,6 +7,15 @@ import { api, API_BASE } from "@/lib/api-service";
 type UpdateAuditParams = { id: string } & Partial<InsertAudit>;
 type UpdateAuditItemParams = { id: string } & Partial<InsertAuditItem>;
 
+/** Persisted AI insight reports for one audit (M8 read surface). */
+export function useAuditReports(auditId?: string) {
+    return useQuery({
+        queryKey: ["audit-reports", auditId],
+        queryFn: () => api.getAuditReports(auditId!),
+        enabled: !!auditId,
+    });
+}
+
 export function useAudits() {
     return useQuery({
         queryKey: ["audits"],
@@ -131,6 +140,7 @@ export function useGenerateInsights(auditId: string) {
                     if (job.state === "done") {
                         queryClient.invalidateQueries({ queryKey: ["audit", auditId] });
                         queryClient.invalidateQueries({ queryKey: ["audits"] });
+                        queryClient.invalidateQueries({ queryKey: ["audit-reports", auditId] });
                         toast({
                             title: "AI Analysis Complete",
                             description: "Audit insights generated successfully",

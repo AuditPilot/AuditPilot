@@ -1,7 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { api } from "@/lib/api-service";
-import type { PullListResponse, RepoFindingsResponse, RepoHealthResponse, RepoAuditSummary, RepoAuditCompareResponse } from "@/lib/api-service";
+import type {
+  PullListResponse, RepoFindingsResponse, RepoHealthResponse, RepoAuditSummary, RepoAuditCompareResponse,
+  WorkspaceMemberRow, WorkspaceInviteRow, ActivityPage,
+} from "@/lib/api-service";
 
 export function useWorkspaces() {
   return useQuery({
@@ -216,5 +219,107 @@ export function useRepoAuditCompare(workspaceId: string, repoId: string, base?: 
     queryKey: ["repo-audit-compare", workspaceId, repoId, base, target],
     queryFn: () => api.compareRepoAudits(workspaceId, repoId, base!, target!),
     enabled: !!workspaceId && !!repoId && !!base && !!target && base !== target,
+  });
+}
+
+// --- Team collaboration (M8) ---
+
+const MEMBERS_KEY = (wsId: string) => ["workspace-members", wsId];
+const INVITES_KEY = (wsId: string) => ["workspace-invites", wsId];
+
+export function useWorkspaceMembers(workspaceId?: string) {
+  return useQuery<WorkspaceMemberRow[]>({
+    queryKey: MEMBERS_KEY(workspaceId ?? ""),
+    queryFn: async () => (await api.getWorkspaceMembers(workspaceId!)).members,
+    enabled: !!workspaceId,
+  });
+}
+
+export function useWorkspaceInvites(workspaceId?: string) {
+  return useQuery<WorkspaceInviteRow[]>({
+    queryKey: INVITES_KEY(workspaceId ?? ""),
+    queryFn: async () => (await api.getWorkspaceInvites(workspaceId!)).invites,
+    enabled: !!workspaceId,
+  });
+}
+
+export function useChangeMemberRole(workspaceId: string) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (input: { userId: string; role: string }) =>
+      api.changeWorkspaceMemberRole(workspaceId, input.userId, input.role),
+    onSuccess: (data, input) => {
+      queryClient.invalidateQueries({ queryKey: MEMBERS_KEY(workspaceId) });
+      toast({ title: "Role updated", description: `Member is now a ${data.member.role}.` });
+    },
+  });
+}
+
+export function useRemoveMember(workspaceId: string) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (userId: string) => api.removeWorkspaceMember(workspaceId, userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: MEMBERS_KEY(workspaceId) });
+      toast({ title: "Member removed", description: "They no longer have access to this workspace." });
+    },
+  });
+}
+
+export function useCreateInvite(workspaceId: string) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (input: { email: string; role: string }) =>
+      api.createWorkspaceInvite(workspaceId, input.email, input.role),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: INVITES_KEY(workspaceId) });
+      toast({
+        title: "Invitation created",
+        description: `Share the link with ${data.invite.email} — it lets them join as ${data.invite.role} for one week.`,
+      });
+    },
+  });
+}
+
+export function useRevokeInvite(workspaceId: string) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (inviteId: string) => api.revokeWorkspaceInvite(workspaceId, inviteId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INVITES_KEY(workspaceId) });
+      toast({ title: "Invite revoked", description: "The invitation link no longer works." });
+    },
+  });
+}
+
+export function useWorkspaceActivity(workspaceId: string, page: number) {
+  return useQuery<ActivityPage>({
+    queryKey: ["workspace-activity", workspaceId, page],
+    queryFn: () => api.getWorkspaceActivity(workspaceId, page),
+    enabled: !!workspaceId,
+  });
+}
+
+export function useAssignFinding(workspaceId: string, repoId: string) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (input: { findingId: string; assignedTo: string | null }) =>
+      api.assignRepoFinding(workspaceId, repoId, input.findingId, input.assignedTo),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["repo-findings", workspaceId, repoId] });
+      toast({
+        title: data.assignee ? `Assigned to ${data.assignee.username}` : "Assignment cleared",
+      });
+    },
   });
 }
